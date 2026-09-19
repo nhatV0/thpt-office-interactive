@@ -66,6 +66,21 @@ export const COURSES_REGISTRY: CourseDefinition[] = [
     tags: ['5 Đề thi lớn', '35 Dự án', 'File mẫu .docx', 'Multi-Project', 'Sát đề thi thật']
   },
   {
+    id: 'cp-basic',
+    title: 'Lập Trình Cơ Bản (C++ & Python)',
+    subtitle: 'Nền tảng cú pháp, cấu trúc dữ liệu & tư duy lập trình',
+    description: 'Trang bị nền móng vững chắc cho học sinh: Nhập xuất & biểu thức, Câu lệnh rẽ nhánh if/else, Vòng lặp for/while, Mảng 1 chiều, Xâu ký tự, Hàm & đệ quy, Xử lý chữ số và Kỹ thuật sắp xếp cơ bản.',
+    kind: 'programming',
+    category: 'programming',
+    badgeName: 'CP Cơ Bản',
+    accentColor: 'emerald',
+    accentClass: 'from-emerald-500 to-teal-600',
+    totalUnits: 8,
+    unitLabel: 'chủ đề',
+    durationHours: 35,
+    tags: ['C++', 'Python', 'Nhập xuất', 'If Else', 'Vòng lặp', 'Mảng 1D', 'String', 'Hàm']
+  },
+  {
     id: 'cp-bronze',
     title: 'Lập Trình Thi Đấu Nâng Cao',
     subtitle: 'Thuật toán kinh điển & Nền tảng Olympic Tin học',

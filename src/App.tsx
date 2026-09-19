@@ -131,7 +131,7 @@ const AppContent: React.FC = () => {
           />
         ) : viewMode === 'programming' ? (
           <CompetitiveProgrammingView
-            courseId={activeCourseId === 'cp-silver' ? 'cp-silver' : 'cp-bronze'}
+            courseId={(activeCourseId === 'cp-silver' || activeCourseId === 'cp-bronze' || activeCourseId === 'cp-basic') ? activeCourseId : 'cp-basic'}
             onBackToCourses={() => setViewMode('courses')}
           />
         ) : viewMode === 'practice' ? (

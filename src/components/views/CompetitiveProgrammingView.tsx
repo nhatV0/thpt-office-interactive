@@ -28,7 +28,7 @@ import { useLearning } from '../../context/LearningContext';
 import { MathRenderer } from '../common/MathRenderer';
 
 interface CompetitiveProgrammingViewProps {
-  courseId: 'cp-bronze' | 'cp-silver';
+  courseId: 'cp-basic' | 'cp-bronze' | 'cp-silver';
   onBackToCourses: () => void;
 }
 
@@ -153,19 +153,38 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
     Math.round(((solvedProblemsCount + finishedTheoriesCount) / (totalProblemsCount + courseData.lessons.length)) * 100)
   );
 
-  const isAdvanced = courseId === 'cp-bronze';
-  const themeBorder = isAdvanced ? 'border-amber-500/30 dark:border-amber-500/30' : 'border-cyan-500/30 dark:border-cyan-500/30';
-  const themeGlow = isAdvanced
+  const isBasic = courseId === 'cp-basic';
+  const isBronze = courseId === 'cp-bronze';
+
+  const themeBorder = isBasic
+    ? 'border-emerald-500/30 dark:border-emerald-500/30'
+    : isBronze
+    ? 'border-amber-500/30 dark:border-amber-500/30'
+    : 'border-cyan-500/30 dark:border-cyan-500/30';
+
+  const themeGlow = isBasic
+    ? 'from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent'
+    : isBronze
     ? 'from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent'
     : 'from-cyan-500/10 via-cyan-500/5 to-transparent dark:from-cyan-500/10 dark:via-cyan-500/5 dark:to-transparent';
-  const themeBadge = isAdvanced
+
+  const themeBadge = isBasic
+    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+    : isBronze
     ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
     : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30';
-  const themeBtn = isAdvanced
+
+  const themeBtn = isBasic
+    ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold'
+    : isBronze
     ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold'
     : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold';
-  const themeText = isAdvanced ? 'text-amber-600 dark:text-amber-400' : 'text-cyan-600 dark:text-cyan-400';
 
+  const themeText = isBasic
+    ? 'text-emerald-600 dark:text-emerald-400'
+    : isBronze
+    ? 'text-amber-600 dark:text-amber-400'
+    : 'text-cyan-600 dark:text-cyan-400';
   // Copy helpers
   const handleCopyInput = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -270,7 +289,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
             </div>
             <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-300 ${isAdvanced ? 'bg-amber-500' : 'bg-cyan-500'}`}
+                className={`h-full transition-all duration-300 ${isBasic ? 'bg-emerald-500' : isBronze ? 'bg-amber-500' : 'bg-cyan-500'}`}
                 style={{ width: `${(finishedTheoriesCount / courseData.lessons.length) * 100}%` }}
               />
             </div>
@@ -298,7 +317,9 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                   <div
                     className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-mono shrink-0 transition-colors ${
                       isSelected
-                        ? isAdvanced
+                        ? isBasic
+                          ? 'bg-emerald-500 text-slate-950 font-bold'
+                          : isBronze
                           ? 'bg-amber-500 text-slate-950 font-bold'
                           : 'bg-cyan-500 text-slate-950 font-bold'
                         : isTheoryDone
@@ -399,7 +420,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 onClick={() => setActiveTab('theory')}
                 className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                   activeTab === 'theory'
-                    ? `${isAdvanced ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
+                    ? `${isBasic ? 'border-emerald-500 text-emerald-400' : isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -411,7 +432,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 onClick={() => setActiveTab('problems')}
                 className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                   activeTab === 'problems'
-                    ? `${isAdvanced ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
+                    ? `${isBasic ? 'border-emerald-500 text-emerald-400' : isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -424,7 +445,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                   onClick={() => setActiveTab('testcases')}
                   className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                     activeTab === 'testcases'
-                      ? `${isAdvanced ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
+                      ? `${isBasic ? 'border-emerald-500 text-emerald-400' : isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
                       : 'border-transparent text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -493,7 +514,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                       <ul className="space-y-2.5 text-xs text-slate-300">
                         {currentLesson.coreConcepts.map((concept, idx) => (
                           <li key={idx} className="flex items-start gap-2">
-                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${isAdvanced ? 'bg-amber-400' : 'bg-cyan-400'}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${isBasic ? 'bg-emerald-400' : isBronze ? 'bg-amber-400' : 'bg-cyan-400'}`} />
                             <span>{concept}</span>
                           </li>
                         ))}

@@ -274,6 +274,8 @@ export const TeacherDashboard: React.FC = () => {
                                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
                                 : c.id === 'powerpoint'
                                 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                                : c.id === 'cp-basic'
+                                ? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border-teal-300 dark:border-teal-800'
                                 : c.id === 'cp-bronze'
                                 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800'
                                 : c.id === 'cp-silver'
@@ -291,7 +293,7 @@ export const TeacherDashboard: React.FC = () => {
                                     : 'opacity-40 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 line-through'
                                 }`}
                               >
-                                {c.id === 'word' ? 'Word' : c.id === 'excel' ? 'Excel' : c.id === 'powerpoint' ? 'PowerPoint' : c.id === 'cp-bronze' ? 'Nâng Cao' : c.id === 'cp-silver' ? 'Chuyên Sâu' : 'Đề MOS Word'}
+                                {c.id === 'word' ? 'Word' : c.id === 'excel' ? 'Excel' : c.id === 'powerpoint' ? 'PowerPoint' : c.id === 'cp-basic' ? 'Cơ Bản' : c.id === 'cp-bronze' ? 'Nâng Cao' : c.id === 'cp-silver' ? 'Chuyên Sâu' : 'Đề MOS Word'}
                               </button>
                             );
                           })}

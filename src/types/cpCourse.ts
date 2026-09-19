@@ -36,13 +36,15 @@ export interface CPLesson {
   problems: CPProblem[];
 }
 
+export type CPCourseId = 'cp-basic' | 'cp-bronze' | 'cp-silver';
+
 export interface CPCourseData {
-  id: 'cp-bronze' | 'cp-silver';
+  id: CPCourseId;
   title: string;
   subtitle: string;
   levelBadge: string;
   description: string;
-  accentColor: 'amber' | 'cyan';
+  accentColor: 'emerald' | 'amber' | 'cyan';
   accentClass: string;
   lessons: CPLesson[];
 }

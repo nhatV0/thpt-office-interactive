@@ -57,11 +57,12 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
         return <Presentation className="w-6 h-6 text-white" />;
       case 'word-practice':
         return <FolderArchive className="w-6 h-6 text-white" />;
+      case 'cp-basic':
+        return <Code2 className="w-6 h-6 text-white" />;
       case 'cp-bronze':
         return <Terminal className="w-6 h-6 text-white" />;
       case 'cp-silver':
-        return <Code2 className="w-6 h-6 text-white" />;
-      default:
+        return <Sparkles className="w-6 h-6 text-white" />;
         return <BookOpen className="w-6 h-6 text-white" />;
     }
   };
