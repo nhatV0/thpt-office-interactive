@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import { Copy, Check, Terminal, Code2, Sparkles, HelpCircle } from 'lucide-react';
+import { Copy, Check, Terminal, Code2, HelpCircle } from 'lucide-react';
 import { StepRoadmap } from './StepRoadmap';
 
 interface MathRendererProps {
@@ -343,6 +343,15 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
 
       // If inside code, detect if code has ended
       if (insideCode) {
+        // Detect if line starts with closing brace glued to text e.g. "}7. Các dạng..."
+        if (/^\}\s*\d+\./.test(trimmed) || /^\}\s*[A-ZÀ-Ỹ]/.test(trimmed)) {
+          codeLines.push('}');
+          flushCodeBlock(lineKey);
+          const remainingText = trimmed.replace(/^\}\s*/, '');
+          lines[i] = remainingText;
+          continue;
+        }
+
         const isEndOfCode =
           /^\d+\.\s+[A-ZÀ-Ỹ]/.test(trimmed) ||
           trimmed.startsWith('Giải thích') ||
@@ -352,7 +361,8 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
           trimmed.startsWith('Bài tập') ||
           trimmed.startsWith('Lỗi ') ||
           trimmed.startsWith('KẾT QUẢ Ý NGHĨA') ||
-          trimmed.startsWith('DÒNG Ý NGHĨA');
+          trimmed.startsWith('DÒNG Ý NGHĨA') ||
+          trimmed.startsWith('DẠNG CHIẾN LƯỢC');
 
         if (isEndOfCode) {
           flushCodeBlock(lineKey);
@@ -363,8 +373,20 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
         }
       }
 
-      // Headings
-      if (trimmed.startsWith('# ') || trimmed.startsWith('## ') || trimmed.startsWith('### ')) {
+      // Headings (Avoid treating Python comments like "# Python không có sort" as markdown headings!)
+      const isMarkdownHeading =
+        (trimmed.startsWith('# ') || trimmed.startsWith('## ') || trimmed.startsWith('### ')) &&
+        !trimmed.toLowerCase().includes('python') &&
+        !trimmed.toLowerCase().includes('c++') &&
+        !trimmed.toLowerCase().includes('sort') &&
+        !trimmed.toLowerCase().includes('include') &&
+        !trimmed.toLowerCase().includes('import') &&
+        !trimmed.toLowerCase().includes('def ') &&
+        !trimmed.includes('=') &&
+        !trimmed.includes('(') &&
+        !trimmed.includes('[');
+
+      if (isMarkdownHeading) {
         const text = trimmed.replace(/^#+\s*/, '');
         resultNodes.push(
           <div key={lineKey} className="mt-7 mb-3">
@@ -372,20 +394,6 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
               <span className="w-1.5 h-4.5 rounded-full bg-cyan-500" />
               <span>{text}</span>
             </h3>
-          </div>
-        );
-        i++;
-        continue;
-      }
-
-      // Numbered major section: "1. Lập trình thi đấu là gì?"
-      if (/^\d+\.\s+/.test(trimmed)) {
-        resultNodes.push(
-          <div key={lineKey} className="mt-6 mb-2.5 bg-slate-100 dark:bg-slate-900/60 border-l-3 border-cyan-500 pl-3 py-1.5 rounded-r-lg">
-            <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
-              {renderInlineMathAndText(trimmed, lineKey)}
-            </h4>
           </div>
         );
         i++;
