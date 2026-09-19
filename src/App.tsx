@@ -8,13 +8,17 @@ import { CurriculumView } from './components/views/CurriculumView';
 import { LessonUnitView } from './components/views/LessonUnitView';
 import { TeacherDashboard } from './components/views/TeacherDashboard';
 import { WordPracticeReviewView } from './components/views/WordPracticeReviewView';
+import { CourseSelectionView } from './components/views/CourseSelectionView';
+import type { CourseDefinition } from './types/course';
 import { SummaryModal } from './components/modals/SummaryModal';
 import { LoginPage } from './components/views/LoginPage';
-
+import { CompetitiveProgrammingView } from './components/views/CompetitiveProgrammingView';
 const AppContent: React.FC = () => {
   const {
+    activeCourseId,
     activeModuleId,
     activeLessonId,
+    setActiveCourseId,
     setActiveModuleId,
     setActiveLessonId,
     setCurrentTab,
@@ -22,7 +26,7 @@ const AppContent: React.FC = () => {
   } = useLearning();
 
   const { currentUser } = useAuth();
-  const [viewMode, setViewMode] = useState<'curriculum' | 'lesson' | 'dashboard' | 'practice'>('curriculum');
+  const [viewMode, setViewMode] = useState<'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming'>('courses');
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
       const savedTheme = localStorage.getItem('thpt_office_theme');
@@ -56,13 +60,24 @@ const AppContent: React.FC = () => {
   const currentLesson =
     currentModule.lessons.find(l => l.id === activeLessonId) || currentModule.lessons[0];
 
+  const handleSelectCourse = (course: CourseDefinition) => {
+    setActiveCourseId(course.id);
+    if (course.kind === 'programming') {
+      setViewMode('programming');
+    } else if (course.kind === 'practice') {
+      setViewMode('practice');
+    } else if (course.moduleId) {
+      setActiveModuleId(course.moduleId);
+      setViewMode('curriculum');
+    }
+  };
+
   const handleSelectLesson = (modId: ModuleType, lessonId: string) => {
     setActiveModuleId(modId);
     setActiveLessonId(lessonId);
     setCurrentTab('theory');
     setViewMode('lesson');
   };
-
   const handleNextLesson = () => {
     setIsSummaryOpen(false);
     const allLessons: { modId: ModuleType; lessonId: string }[] = [];
@@ -97,23 +112,39 @@ const AppContent: React.FC = () => {
       <HeaderNav
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(prev => !prev)}
-        onGoHome={() => setViewMode('curriculum')}
+        onGoHome={() => setViewMode('courses')}
+        onOpenCourses={() => setViewMode('courses')}
+        onOpenCurriculum={() => setViewMode('curriculum')}
         onOpenDashboard={() => setViewMode('dashboard')}
         onOpenPractice={() => setViewMode('practice')}
         onOpenLogin={() => {}}
         currentView={viewMode}
+        activeCourseId={activeCourseId}
       />
 
       {/* Main View Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {viewMode === 'practice' ? (
-          <WordPracticeReviewView />
+        {viewMode === 'courses' ? (
+          <CourseSelectionView
+            onSelectCourse={handleSelectCourse}
+            onOpenTeacherDashboard={() => setViewMode('dashboard')}
+          />
+        ) : viewMode === 'programming' ? (
+          <CompetitiveProgrammingView
+            courseId={activeCourseId === 'cp-silver' ? 'cp-silver' : 'cp-bronze'}
+            onBackToCourses={() => setViewMode('courses')}
+          />
+        ) : viewMode === 'practice' ? (
+          <WordPracticeReviewView
+            onBackToCourses={() => setViewMode('courses')}
+          />
         ) : viewMode === 'dashboard' && currentUser?.role === 'teacher' ? (
           <TeacherDashboard />
         ) : viewMode === 'curriculum' ? (
           <CurriculumView
             onSelectLesson={handleSelectLesson}
             onOpenPractice={() => setViewMode('practice')}
+            onBackToCourses={() => setViewMode('courses')}
           />
         ) : (
           <LessonUnitView

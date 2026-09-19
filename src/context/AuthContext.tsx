@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { UserAccount } from '../types/auth';
-
+import { getAllCourseIds } from '../data/coursesData';
 interface AuthContextType {
   currentUser: UserAccount | null;
   accounts: UserAccount[];
@@ -23,7 +23,7 @@ const defaultAccounts: UserAccount[] = [
     password: 'Nhat30655',
     fullName: 'Giáo Viên Quản Trị Hệ Thống',
     role: 'teacher',
-    allowedCourses: ['word', 'excel', 'powerpoint'],
+    allowedCourses: getAllCourseIds(),
     xpPoints: 999,
     streak: 30,
     progress: {},
@@ -36,7 +36,7 @@ const defaultAccounts: UserAccount[] = [
     fullName: 'Nguyễn Văn An',
     role: 'student',
     schoolClass: '12A1',
-    allowedCourses: ['word', 'excel'],
+    allowedCourses: ['word', 'excel', 'word-practice'],
     xpPoints: 240,
     streak: 4,
     progress: {
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const allowedCourses = a.allowedCourses && a.allowedCourses.length > 0
             ? a.allowedCourses
             : a.role === 'teacher'
-            ? ['word', 'excel', 'powerpoint']
+            ? getAllCourseIds()
             : ['word'];
           if (a.username.toLowerCase() === 'admin') {
             return {
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               username: 'admin',
               password: 'Nhat30655',
               role: 'teacher',
-              allowedCourses: ['word', 'excel', 'powerpoint']
+              allowedCourses: getAllCourseIds()
             };
           }
           return { ...a, allowedCourses };

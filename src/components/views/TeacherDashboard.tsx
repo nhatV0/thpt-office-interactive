@@ -13,6 +13,8 @@ import {
   Check
 } from 'lucide-react';
 import { sanitizeText, isValidUsername } from '../../utils/security';
+import { COURSES_REGISTRY } from '../../data/coursesData';
+
 export const TeacherDashboard: React.FC = () => {
   const { accounts, createStudent, updateStudentCourses, deleteStudent, resetStudentProgress } = useAuth();
 
@@ -263,31 +265,38 @@ export const TeacherDashboard: React.FC = () => {
                       {/* Allowed Courses badges with quick toggle */}
                       <td className="p-3.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {[
-                            { id: 'word', label: 'Word', activeBg: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300 dark:border-sky-800' },
-                            { id: 'excel', label: 'Excel', activeBg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' },
-                            { id: 'powerpoint', label: 'PowerPoint', activeBg: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800' }
-                          ].map(c => {
+                          {COURSES_REGISTRY.map(c => {
                             const isAllowed = (student.allowedCourses || ['word']).includes(c.id);
+                            const activeBadgeClass =
+                              c.id === 'word'
+                                ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300 dark:border-sky-800'
+                                : c.id === 'excel'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                                : c.id === 'powerpoint'
+                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                                : c.id === 'cp-bronze'
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                                : c.id === 'cp-silver'
+                                ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300 border-cyan-300 dark:border-cyan-800'
+                                : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800';
                             return (
                               <button
                                 key={c.id}
                                 type="button"
                                 onClick={() => handleToggleCourse(student.id, student.allowedCourses || ['word'], c.id)}
-                                title={`Nhấp để ${isAllowed ? 'khóa' : 'mở'} khóa học ${c.label}`}
+                                title={`Nhấp để ${isAllowed ? 'khóa' : 'mở'} khóa học ${c.title}`}
                                 className={`px-2 py-0.5 rounded-md border text-[10px] font-bold cursor-pointer transition-all ${
                                   isAllowed
-                                    ? c.activeBg
+                                    ? activeBadgeClass
                                     : 'opacity-40 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 line-through'
                                 }`}
                               >
-                                {c.label}
+                                {c.id === 'word' ? 'Word' : c.id === 'excel' ? 'Excel' : c.id === 'powerpoint' ? 'PowerPoint' : c.id === 'cp-bronze' ? 'CP Đồng' : c.id === 'cp-silver' ? 'CP Bạc' : 'Đề MOS Word'}
                               </button>
                             );
                           })}
                         </div>
                       </td>
-
                       {/* Progress bar */}
                       <td className="p-3.5 min-w-[180px]">
                         <div className="flex items-center justify-between text-[11px] mb-1">
@@ -442,15 +451,11 @@ export const TeacherDashboard: React.FC = () => {
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                   Khóa Học Cho Phép Truy Cập
                 </label>
-                <div className="flex items-center gap-2">
-                  {[
-                    { id: 'word', label: 'Word 2019' },
-                    { id: 'excel', label: 'Excel 2019' },
-                    { id: 'powerpoint', label: 'PowerPoint 2019' }
-                  ].map(course => (
+                <div className="grid grid-cols-2 gap-2">
+                  {COURSES_REGISTRY.map(course => (
                     <label
                       key={course.id}
-                      className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-xl"
+                      className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 rounded-xl hover:border-sky-500/50 transition-colors"
                     >
                       <input
                         type="checkbox"
@@ -464,7 +469,7 @@ export const TeacherDashboard: React.FC = () => {
                         }}
                         className="rounded text-sky-600 focus:ring-sky-500 cursor-pointer"
                       />
-                      <span>{course.label}</span>
+                      <span className="font-medium truncate">{course.title}</span>
                     </label>
                   ))}
                 </div>

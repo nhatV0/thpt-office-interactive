@@ -11,7 +11,11 @@ import {
   Laptop
 } from 'lucide-react';
 
-export const WordPracticeReviewView: React.FC = () => {
+interface WordPracticeReviewViewProps {
+  onBackToCourses?: () => void;
+}
+
+export const WordPracticeReviewView: React.FC<WordPracticeReviewViewProps> = ({ onBackToCourses }) => {
   const [selectedExamId, setSelectedExamId] = useState<string>(MOS_WORD_PRACTICE_EXAMS[0].id);
   const [activeProjectId, setActiveProjectId] = useState<string>(
     MOS_WORD_PRACTICE_EXAMS[0].projects[0].id
@@ -33,7 +37,21 @@ export const WordPracticeReviewView: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
-      {/* Hero Banner */}
+      {/* Navigation Top Bar */}
+      {onBackToCourses && (
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onBackToCourses}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer shadow-xs"
+          >
+            <span>← Đổi khóa học khác</span>
+          </button>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Đang học: <strong className="text-indigo-600 dark:text-indigo-400">Ôn Luyện Đề Thi MOS Word 2019</strong>
+          </span>
+        </div>
+      )}
       <div className="bg-gradient-to-r from-sky-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2 max-w-2xl">
