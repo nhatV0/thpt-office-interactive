@@ -2,10 +2,10 @@ import React, { useState, useMemo } from 'react';
 import {
   Code2,
   BookOpen,
-  FileCode,
   Download,
   ExternalLink,
   CheckCircle2,
+  XCircle,
   Clock,
   HardDrive,
   Search,
@@ -18,7 +18,10 @@ import {
   Sparkles,
   Layers,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Play,
+  Copy,
+  Check
 } from 'lucide-react';
 import { getCPCourseData } from '../../data/cpCoursesData';
 import type { CPLesson, CPProblem } from '../../types/cpCourse';
@@ -42,7 +45,12 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [selectedProblem, setSelectedProblem] = useState<CPProblem | null>(null);
 
-  // Completed tracking via localStorage
+  // User Interactive Testing State in Problem Modal
+  const [userInputOutput, setUserInputOutput] = useState<string>('');
+  const [testResult, setTestResult] = useState<'idle' | 'passed' | 'failed'>('idle');
+  const [hasCopiedInput, setHasCopiedInput] = useState<boolean>(false);
+
+  // Storage keys for progress tracking
   const storageKeyTheory = `cp_${courseId}_theory_done`;
   const storageKeyProblems = `cp_${courseId}_problems_done`;
 
@@ -71,7 +79,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
         <h2 className="text-xl font-bold mb-2">Không tìm thấy khóa học</h2>
         <button
           onClick={onBackToCourses}
-          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors"
+          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
         >
           Quay lại danh sách khóa học
         </button>
@@ -126,7 +134,6 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
     });
   }, [currentLesson, searchQuery, sourceFilter]);
 
-  // Count total progress
   const totalProblemsCount = useMemo(() => {
     return courseData.lessons.reduce((acc, l) => acc + l.problems.length, 0);
   }, [courseData]);
@@ -153,6 +160,29 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
     : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold';
   const themeText = isBronze ? 'text-amber-400' : 'text-cyan-400';
 
+  // Copy sample input handler
+  const handleCopyInput = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setHasCopiedInput(true);
+    setTimeout(() => setHasCopiedInput(false), 2000);
+  };
+
+  // Compare user output with expected sample output
+  const handleVerifyOutput = () => {
+    if (!selectedProblem || !selectedProblem.sampleOutput) return;
+    const cleanExpected = selectedProblem.sampleOutput.trim().replace(/\r\n/g, '\n');
+    const cleanUser = userInputOutput.trim().replace(/\r\n/g, '\n');
+
+    if (cleanUser === cleanExpected) {
+      setTestResult('passed');
+      if (!completedProblems[selectedProblem.id]) {
+        handleToggleProblemDone(selectedProblem.id);
+      }
+    } else {
+      setTestResult('failed');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-white">
       {/* Top Header Navigation */}
@@ -160,7 +190,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
         <div className="flex items-center gap-3">
           <button
             onClick={onBackToCourses}
-            className="flex items-center gap-1.5 text-xs lg:text-sm font-medium text-slate-400 hover:text-white px-2.5 py-1.5 rounded-md hover:bg-slate-800 transition-colors border border-slate-800"
+            className="flex items-center gap-1.5 text-xs lg:text-sm font-medium text-slate-400 hover:text-white px-2.5 py-1.5 rounded-md hover:bg-slate-800 transition-colors border border-slate-800 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Đổi khóa học</span>
@@ -243,7 +273,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                     setSelectedLessonIndex(idx);
                     setSelectedProblem(null);
                   }}
-                  className={`w-full text-left p-3 rounded-lg transition-all duration-150 relative group flex items-start gap-3 ${
+                  className={`w-full text-left p-3 rounded-lg transition-all duration-150 relative group flex items-start gap-3 cursor-pointer ${
                     isSelected
                       ? `bg-slate-800/90 border ${themeBorder} shadow-sm shadow-black/40`
                       : 'hover:bg-slate-800/40 border border-transparent text-slate-400'
@@ -308,7 +338,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
 
                 <button
                   onClick={() => handleToggleTheoryDone(currentLesson.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
                     completedTheories[currentLesson.id]
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                       : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
@@ -351,39 +381,39 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
             <div className="max-w-5xl mx-auto flex items-center gap-1">
               <button
                 onClick={() => setActiveTab('theory')}
-                className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                   activeTab === 'theory'
                     ? `${isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <BookOpen className="w-4 h-4" />
-                <span>Lý Thuyết & Bài Giảng</span>
+                <span>Giáo Trình Trực Tuyến</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('problems')}
-                className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                   activeTab === 'problems'
                     ? `${isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <Code2 className="w-4 h-4" />
-                <span>Danh Sách Bài Tập ({currentLesson.problems.length})</span>
+                <span>Đề Bài Thuật Toán ({currentLesson.problems.length})</span>
               </button>
 
               {currentLesson.problems.some(p => p.hasTestCases) && (
                 <button
                   onClick={() => setActiveTab('testcases')}
-                  className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                     activeTab === 'testcases'
                       ? `${isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
                       : 'border-transparent text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   <Download className="w-4 h-4" />
-                  <span>Test Cases & Lời Giải</span>
+                  <span>Test Cases Chấm Bài</span>
                 </button>
               )}
             </div>
@@ -392,7 +422,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
           {/* Tab Content Body */}
           <div className="p-5 lg:p-8 flex-1">
             <div className="max-w-5xl mx-auto">
-              {/* TAB 1: THEORY */}
+              {/* TAB 1: THEORY ONLINE READER */}
               {activeTab === 'theory' && (
                 <div className="space-y-6">
                   {/* Theory Action Card */}
@@ -405,15 +435,15 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                              Tài liệu PDF gốc
+                              Giáo trình lý thuyết đầy đủ
                             </span>
-                            <span className="text-xs text-slate-400 font-mono">Chuyên Đề Thuật Toán</span>
+                            <span className="text-xs text-slate-400 font-mono">Đã làm sạch Headnote & Footnote</span>
                           </div>
                           <h3 className="text-base lg:text-lg font-bold text-white mb-1">
                             {currentLesson.theoryPdfFileName}
                           </h3>
                           <p className="text-xs text-slate-400">
-                            Giáo trình lý thuyết hệ thống, đầy đủ các trường hợp mẫu, phân tích độ phức tạp Big O và template code C++.
+                            Nội dung được trích xuất hoàn chỉnh trực tiếp trên web, không cần phụ thuộc trình đọc PDF ngoài.
                           </p>
                         </div>
                       </div>
@@ -423,22 +453,37 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                           href={currentLesson.theoryPdfUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold shadow-md transition-all ${themeBtn}`}
+                          className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors border border-slate-700"
+                          title="Mở file PDF gốc"
                         >
                           <ExternalLink className="w-4 h-4" />
-                          <span>Đọc Giáo Trình PDF</span>
-                        </a>
-                        <a
-                          href={currentLesson.theoryPdfUrl}
-                          download={currentLesson.theoryPdfFileName}
-                          className="flex items-center justify-center p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700"
-                          title="Tải file PDF về máy"
-                        >
-                          <Download className="w-4 h-4" />
+                          <span>Mở PDF Gốc</span>
                         </a>
                       </div>
                     </div>
                   </div>
+
+                  {/* Full Theory Text Area */}
+                  {currentLesson.theoryContent ? (
+                    <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-6 lg:p-8 space-y-4 shadow-inner">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2 font-mono">
+                          <BookOpen className="w-4 h-4 text-sky-400" />
+                          Nội Dung Bài Học Chi Tiết
+                        </h4>
+                        <span className="text-[11px] font-mono text-slate-500">
+                          {currentLesson.theoryContent.length} ký tự
+                        </span>
+                      </div>
+                      <div className="prose prose-invert max-w-none text-xs lg:text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-sans select-text">
+                        {currentLesson.theoryContent}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 text-center text-slate-400 text-xs">
+                      Đang tải tài liệu trực tuyến... Vui lòng mở file PDF gốc ở trên.
+                    </div>
+                  )}
 
                   {/* Core Concepts Deep Dive */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -503,7 +548,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                         <button
                           key={source}
                           onClick={() => setSourceFilter(source)}
-                          className={`text-xs font-mono px-2.5 py-1 rounded transition-colors whitespace-nowrap ${
+                          className={`text-xs font-mono px-2.5 py-1 rounded transition-colors whitespace-nowrap cursor-pointer ${
                             sourceFilter === source
                               ? 'bg-slate-800 text-white font-semibold border border-slate-700'
                               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -523,7 +568,11 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                       return (
                         <div
                           key={prob.id}
-                          onClick={() => setSelectedProblem(prob)}
+                          onClick={() => {
+                            setSelectedProblem(prob);
+                            setUserInputOutput('');
+                            setTestResult('idle');
+                          }}
                           className={`p-4 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
                             isSolved
                               ? 'bg-slate-900/40 border-emerald-500/20 hover:border-emerald-500/40'
@@ -544,14 +593,14 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                                 </span>
                                 {prob.hasTestCases && (
                                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                                    Có Test Cases
+                                    Có Test Chấm ({prob.totalTests || 15})
                                   </span>
                                 )}
                               </div>
 
                               <button
                                 onClick={e => handleToggleProblemDone(prob.id, e)}
-                                className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
+                                className={`w-5 h-5 rounded flex items-center justify-center transition-colors cursor-pointer ${
                                   isSolved
                                     ? 'bg-emerald-500 text-slate-950'
                                     : 'border border-slate-700 hover:border-slate-500 text-transparent'
@@ -582,7 +631,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                             </div>
 
                             <div className="flex items-center gap-1 text-slate-400 group-hover:text-slate-200">
-                              <span>Xem đề</span>
+                              <span>Làm bài</span>
                               <ChevronRight className="w-3 h-3" />
                             </div>
                           </div>
@@ -626,11 +675,11 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold">
                                 Gói Chấm Off-line
                               </span>
-                              <span className="text-xs text-slate-400 font-mono">15 Tests</span>
+                              <span className="text-xs text-slate-400 font-mono">{prob.totalTests || 15} Tests</span>
                             </div>
                             <h4 className="text-sm font-bold text-white mb-2">{prob.title}</h4>
                             <p className="text-xs text-slate-400 mb-4">
-                              Bao gồm bộ test cases chính thức và mã nguồn giải mẫu C++ (solution.cpp).
+                              Bao gồm bộ test cases chính thức và file input/output tiêu chuẩn.
                             </p>
                           </div>
 
@@ -645,17 +694,6 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                                 <span>Tải TestCases (.zip)</span>
                               </a>
                             )}
-                            {prob.solutionCodeUrl && (
-                              <a
-                                href={prob.solutionCodeUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors border border-slate-700"
-                              >
-                                <FileCode className="w-3.5 h-3.5" />
-                                <span>Xem Code Mẫu</span>
-                              </a>
-                            )}
                           </div>
                         </div>
                       ))}
@@ -667,12 +705,12 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
         </main>
       </div>
 
-      {/* Problem Details Modal */}
+      {/* Problem Details & Interactive Test Modal */}
       {selectedProblem && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between gap-4">
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
                 <span
                   className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase border ${
@@ -683,20 +721,21 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 >
                   {selectedProblem.source}
                 </span>
-                <h3 className="text-base font-bold text-white">{selectedProblem.title}</h3>
+                <h3 className="text-base sm:text-lg font-bold text-white line-clamp-1">{selectedProblem.title}</h3>
               </div>
 
               <button
                 onClick={() => setSelectedProblem(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800 transition-colors text-xs font-mono"
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors text-xs font-mono cursor-pointer"
               >
-                ESC / Đóng
+                Đóng (ESC)
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 space-y-4 overflow-y-auto flex-1 text-xs">
-              <div className="grid grid-cols-3 gap-3 bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono">
+            <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 text-xs">
+              {/* Meta stats bar */}
+              <div className="grid grid-cols-3 gap-3 bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono text-center">
                 <div>
                   <span className="text-slate-400 block mb-0.5">Giới hạn thời gian</span>
                   <span className="text-white font-semibold">{selectedProblem.timeLimit}</span>
@@ -711,46 +750,121 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-bold text-slate-200 mb-1">Mô tả bài toán</h4>
-                <p className="text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-lg border border-slate-800">
-                  {selectedProblem.preview}
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-slate-200 mb-1">Tài liệu đề bài chi tiết</h4>
-                <div className="flex items-center justify-between bg-slate-950 p-3 rounded-lg border border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-200 font-mono line-clamp-1">{selectedProblem.fileName}</span>
-                  </div>
+              {/* Full Problem Text (Rendered from PDF without headnotes/footnotes) */}
+              <div className="space-y-2">
+                <h4 className="font-bold text-slate-200 flex items-center justify-between">
+                  <span>Đề bài chi tiết</span>
                   <a
                     href={selectedProblem.pdfUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 font-medium shrink-0 ml-2"
+                    className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono text-[11px]"
                   >
                     <span>Mở PDF</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="w-3 h-3" />
                   </a>
+                </h4>
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 leading-relaxed font-sans whitespace-pre-wrap select-text max-h-72 overflow-y-auto text-xs sm:text-sm">
+                  {selectedProblem.problemContent || selectedProblem.preview}
                 </div>
               </div>
 
-              {selectedProblem.hasTestCases && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                  <h5 className="font-semibold text-amber-400 mb-1">Bộ dữ liệu kiểm thử (Test Cases)</h5>
-                  <p className="text-slate-300 mb-2">
-                    Bài toán này có sẵn bộ dữ liệu kiểm thử offline. Bạn có thể tải về để tự chấm bài.
-                  </p>
-                  <a
-                    href={selectedProblem.testCaseZipUrl}
-                    download
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-slate-950 rounded font-semibold text-xs"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Tải Testcases Zip</span>
-                  </a>
+              {/* Interactive Test Case Runner */}
+              {selectedProblem.sampleInput && (
+                <div className="space-y-3 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-amber-400 flex items-center gap-1.5">
+                      <Terminal className="w-4 h-4" />
+                      <span>Kiểm tra lời giải tự động (Test Runner)</span>
+                    </h4>
+                    {selectedProblem.testCaseZipUrl && (
+                      <a
+                        href={selectedProblem.testCaseZipUrl}
+                        download
+                        className="text-slate-400 hover:text-white flex items-center gap-1 font-mono text-[11px]"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Tải toàn bộ {selectedProblem.totalTests || 15} tests (.zip)</span>
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Input Box with One-Click Copy */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                      <span>Dữ liệu đầu vào (Input mẫu):</span>
+                      <button
+                        onClick={() => handleCopyInput(selectedProblem.sampleInput || '')}
+                        className="flex items-center gap-1 text-sky-400 hover:text-sky-300 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                      >
+                        {hasCopiedInput ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span className="text-emerald-400">Đã copy!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy Input</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-slate-300 font-mono text-xs overflow-x-auto max-h-28">
+                      {selectedProblem.sampleInput}
+                    </pre>
+                  </div>
+
+                  {/* Expected Output Box */}
+                  {selectedProblem.sampleOutput && (
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono text-slate-400 block">Kết quả mẫu kỳ vọng (Expected Output):</span>
+                      <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-emerald-400 font-mono text-xs overflow-x-auto max-h-24">
+                        {selectedProblem.sampleOutput}
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* Output Verification Area */}
+                  <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                    <label className="text-[11px] font-mono text-slate-300 flex items-center justify-between">
+                      <span>Dán kết quả chạy từ code của bạn vào đây:</span>
+                      {testResult === 'passed' && (
+                        <span className="text-emerald-400 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> CHÍNH XÁC (ACCEPTED)
+                        </span>
+                      )}
+                      {testResult === 'failed' && (
+                        <span className="text-rose-400 font-bold flex items-center gap-1">
+                          <XCircle className="w-3.5 h-3.5" /> SAI KẾT QUẢ (WRONG ANSWER)
+                        </span>
+                      )}
+                    </label>
+
+                    <div className="flex gap-2">
+                      <textarea
+                        rows={2}
+                        value={userInputOutput}
+                        onChange={e => {
+                          setUserInputOutput(e.target.value);
+                          setTestResult('idle');
+                        }}
+                        placeholder="Dán output chương trình của bạn vào đây để kiểm tra..."
+                        className="flex-1 bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-700"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOutput}
+                        className={`px-4 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          userInputOutput.trim() ? themeBtn : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        }`}
+                        disabled={!userInputOutput.trim()}
+                      >
+                        <Play className="w-3.5 h-3.5" />
+                        <span>Kiểm Tra</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -759,7 +873,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
             <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
               <button
                 onClick={() => handleToggleProblemDone(selectedProblem.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   completedProblems[selectedProblem.id]
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                     : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
@@ -771,17 +885,12 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 </span>
               </button>
 
-              <div className="flex items-center gap-2">
-                <a
-                  href={selectedProblem.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${themeBtn}`}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Đọc Đề Bài Đầy Đủ</span>
-                </a>
-              </div>
+              <button
+                onClick={() => setSelectedProblem(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>

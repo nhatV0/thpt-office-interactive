@@ -8,9 +8,13 @@ export interface CPProblem {
   point: number; // e.g. 100
   preview: string; // concise description of the problem
   pdfUrl: string; // served URL under public/cp-assets/
+  problemContent?: string; // full extracted problem statement text (no headnotes/footnotes)
   hasTestCases?: boolean;
   testCaseZipUrl?: string;
   solutionCodeUrl?: string;
+  sampleInput?: string; // sample input for manual testing
+  sampleOutput?: string; // expected sample output for answer verification
+  totalTests?: number;
 }
 
 export interface CPLesson {
@@ -20,6 +24,7 @@ export interface CPLesson {
   theoryPdfFileName: string;
   theoryPdfUrl: string;
   theorySummary: string;
+  theoryContent?: string; // full extracted theory document text (no headnotes/footnotes)
   coreConcepts: string[];
   problems: CPProblem[];
 }
