@@ -736,30 +736,61 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
             {/* Modal Body */}
             <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 text-xs">
               {/* Meta stats bar */}
-              <div className="grid grid-cols-3 gap-3 bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono text-center">
+              <div className="grid grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 font-mono text-center">
                 <div>
-                  <span className="text-slate-400 block mb-0.5">Giới hạn thời gian</span>
-                  <span className="text-white font-semibold">{selectedProblem.timeLimit}</span>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-0.5">Giới hạn thời gian</span>
+                  <span className="text-slate-900 dark:text-white font-semibold">{selectedProblem.timeLimit}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block mb-0.5">Giới hạn bộ nhớ</span>
-                  <span className="text-white font-semibold">{selectedProblem.memoryLimit}</span>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-0.5">Giới hạn bộ nhớ</span>
+                  <span className="text-slate-900 dark:text-white font-semibold">{selectedProblem.memoryLimit}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block mb-0.5">Điểm số</span>
-                  <span className="text-emerald-400 font-semibold">{selectedProblem.point} pts</span>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-0.5">Điểm số</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{selectedProblem.point} pts</span>
                 </div>
               </div>
 
-              {/* Full Problem Text with MathRenderer */}
-              <div className="space-y-2">
-                <h4 className="font-bold text-slate-200">
-                  Nội dung đề bài
-                </h4>
-                <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 text-slate-300 leading-relaxed font-sans max-h-72 overflow-y-auto text-xs sm:text-sm">
-                  <MathRenderer content={selectedProblem.problemContent || selectedProblem.preview} />
-                </div>
-              </div>
+              {/* Problem Content divided into 2 distinct sections */}
+              {(() => {
+                const raw = selectedProblem.problemContent || selectedProblem.preview;
+                const splitMatch = raw.match(/\n(?=Input\b|Output\b|Example\b|Ví dụ\b|Test\s*1\b)/i);
+                let statement = raw;
+                let specAndExample = '';
+
+                if (splitMatch && splitMatch.index !== undefined) {
+                  statement = raw.substring(0, splitMatch.index).trim();
+                  specAndExample = raw.substring(splitMatch.index).trim();
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {/* Part 1: Problem Statement */}
+                    <div className="space-y-1.5">
+                      <h4 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <span>Nội dung yêu cầu đề bài</span>
+                      </h4>
+                      <div className="bg-white dark:bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 leading-relaxed font-sans max-h-64 overflow-y-auto text-xs sm:text-sm shadow-xs select-text">
+                        <MathRenderer content={statement} />
+                      </div>
+                    </div>
+
+                    {/* Part 2: Input/Output Specs & Example */}
+                    {specAndExample && (
+                      <div className="space-y-1.5">
+                        <h4 className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-amber-500" />
+                          <span>Quy cách Nhập / Xuất & Ví dụ mẫu</span>
+                        </h4>
+                        <div className="bg-amber-50/60 dark:bg-slate-950/80 p-4 rounded-xl border border-amber-200 dark:border-amber-500/20 text-slate-900 dark:text-slate-100 font-mono text-xs sm:text-sm max-h-64 overflow-y-auto select-text">
+                          <MathRenderer content={specAndExample} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Discrete Test Cases Viewer & Runner */}
               {selectedProblem.hasTestCases && (
@@ -773,7 +804,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                       <a
                         href={selectedProblem.testCaseZipUrl}
                         download
-                        className="text-slate-400 hover:text-white flex items-center gap-1 font-mono text-[11px]"
+                        className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 font-mono text-[11px]"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>Tải toàn bộ bộ test (.zip)</span>
@@ -795,7 +826,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                           className={`text-xs font-mono px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
                             activeTestIndex === tcIdx
                               ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
-                              : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800'
+                              : 'bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
                           }`}
                         >
                           {tc.id}
@@ -814,16 +845,16 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                       <div className="space-y-3 pt-1">
                         {/* Input Box with One-Click Copy */}
                         <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                            <span className="font-bold text-slate-800 dark:text-slate-300">Dữ liệu Input ({currentTest.id}):</span>
+                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 dark:text-slate-400">
+                            <span className="font-bold text-slate-900 dark:text-slate-300">Dữ liệu Input ({currentTest.id}):</span>
                             <button
                               onClick={() => handleCopyInput(currentTest.input)}
                               className="flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
                             >
                               {hasCopiedInput ? (
                                 <>
-                                  <Check className="w-3 h-3 text-emerald-400" />
-                                  <span className="text-emerald-400">Đã copy!</span>
+                                  <Check className="w-3 h-3 text-emerald-500" />
+                                  <span className="text-emerald-500 font-semibold">Đã copy!</span>
                                 </>
                               ) : (
                                 <>
@@ -840,16 +871,16 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
 
                         {/* Expected Output Box with Copy Option */}
                         <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 dark:text-slate-400">
                             <span className="font-bold text-emerald-700 dark:text-emerald-400">Đáp án Output kỳ vọng:</span>
                             <button
                               onClick={() => handleCopyOutput(currentTest.output)}
-                              className="flex items-center gap-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                              className="flex items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
                             >
                               {hasCopiedOutput ? (
                                 <>
-                                  <Check className="w-3 h-3 text-emerald-400" />
-                                  <span className="text-emerald-400">Đã copy!</span>
+                                  <Check className="w-3 h-3 text-emerald-500" />
+                                  <span className="text-emerald-500 font-semibold">Đã copy!</span>
                                 </>
                               ) : (
                                 <>
@@ -869,12 +900,12 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                           <label className="text-[11px] font-mono text-slate-800 dark:text-slate-300 flex items-center justify-between">
                             <span>Dán kết quả chạy từ chương trình của bạn để kiểm tra:</span>
                             {testResult === 'passed' && (
-                              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                                 <CheckCircle2 className="w-3.5 h-3.5" /> CHÍNH XÁC (ACCEPTED)
                               </span>
                             )}
                             {testResult === 'failed' && (
-                              <span className="text-rose-400 font-bold flex items-center gap-1">
+                              <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
                                 <XCircle className="w-3.5 h-3.5" /> SAI KẾT QUẢ (WRONG ANSWER)
                               </span>
                             )}
@@ -889,13 +920,13 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                                 setTestResult('idle');
                               }}
                               placeholder="Dán output của bạn vào đây..."
-                              className="flex-1 bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-700"
+                              className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-mono text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-slate-400 dark:focus:border-slate-700"
                             />
                             <button
                               type="button"
                               onClick={handleVerifyOutput}
                               className={`px-4 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                                userInputOutput.trim() ? themeBtn : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                                userInputOutput.trim() ? themeBtn : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                               }`}
                               disabled={!userInputOutput.trim()}
                             >
@@ -910,7 +941,6 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 </div>
               )}
             </div>
-
             {/* Modal Footer */}
             <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
               <button
