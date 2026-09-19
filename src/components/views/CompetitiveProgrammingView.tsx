@@ -763,9 +763,9 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
 
               {/* Discrete Test Cases Viewer & Runner */}
               {selectedProblem.hasTestCases && (
-                <div className="space-y-3 bg-slate-950/90 p-4 sm:p-5 rounded-xl border border-slate-800">
+                <div className="space-y-3 bg-slate-50 dark:bg-slate-950/90 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h4 className="font-bold text-amber-400 flex items-center gap-1.5">
+                    <h4 className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                       <Terminal className="w-4 h-4" />
                       <span>Kiểm tra từng Test Case</span>
                     </h4>
@@ -783,7 +783,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
 
                   {/* Test selector tabs */}
                   {selectedProblem.testCases && selectedProblem.testCases.length > 0 && (
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-800">
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-200 dark:border-slate-800">
                       {selectedProblem.testCases.map((tc, tcIdx) => (
                         <button
                           key={tc.id}
@@ -815,10 +815,10 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                         {/* Input Box with One-Click Copy */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                            <span className="font-bold text-slate-300">Dữ liệu Input ({currentTest.id}):</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-300">Dữ liệu Input ({currentTest.id}):</span>
                             <button
                               onClick={() => handleCopyInput(currentTest.input)}
-                              className="flex items-center gap-1 text-sky-400 hover:text-sky-300 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                              className="flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
                             >
                               {hasCopiedInput ? (
                                 <>
@@ -833,7 +833,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                               )}
                             </button>
                           </div>
-                          <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-slate-200 font-mono text-xs overflow-x-auto max-h-32 select-all">
+                          <pre className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 font-mono text-xs overflow-x-auto max-h-32 select-all">
                             {currentTest.input}
                           </pre>
                         </div>
@@ -841,10 +841,10 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                         {/* Expected Output Box with Copy Option */}
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                            <span className="font-bold text-emerald-400">Đáp án Output kỳ vọng:</span>
+                            <span className="font-bold text-emerald-700 dark:text-emerald-400">Đáp án Output kỳ vọng:</span>
                             <button
                               onClick={() => handleCopyOutput(currentTest.output)}
-                              className="flex items-center gap-1 text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                              className="flex items-center gap-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
                             >
                               {hasCopiedOutput ? (
                                 <>
@@ -859,14 +859,14 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                               )}
                             </button>
                           </div>
-                          <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-emerald-400 font-mono text-xs overflow-x-auto max-h-28 select-all">
+                          <pre className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 font-mono text-xs overflow-x-auto max-h-28 select-all">
                             {currentTest.output}
                           </pre>
                         </div>
 
                         {/* Output Verification Area */}
-                        <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-                          <label className="text-[11px] font-mono text-slate-300 flex items-center justify-between">
+                        <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800/80">
+                          <label className="text-[11px] font-mono text-slate-800 dark:text-slate-300 flex items-center justify-between">
                             <span>Dán kết quả chạy từ chương trình của bạn để kiểm tra:</span>
                             {testResult === 'passed' && (
                               <span className="text-emerald-400 font-bold flex items-center gap-1">

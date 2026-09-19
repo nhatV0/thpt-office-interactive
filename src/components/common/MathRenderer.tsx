@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { Copy, Check, Terminal, Code2, Sparkles } from 'lucide-react';
+import { StepRoadmap } from './StepRoadmap';
 
 interface MathRendererProps {
   content: string;
@@ -114,7 +115,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
             const html = katex.renderToString(rawFormula, { displayMode: true, throwOnError: false });
             return <div key={key} className="my-2.5 overflow-x-auto py-1" dangerouslySetInnerHTML={{ __html: html }} />;
           } catch {
-            return <code key={key} className="block my-1 font-mono text-amber-300">{rawFormula}</code>;
+            return <code key={key} className="block my-1 font-mono text-amber-600 dark:text-amber-300">{rawFormula}</code>;
           }
         }
 
@@ -126,7 +127,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
             const html = katex.renderToString(rawFormula.trim(), { displayMode: false, throwOnError: false });
             return <span key={key} className="inline-block px-1 font-mono" dangerouslySetInnerHTML={{ __html: html }} />;
           } catch {
-            return <code key={key} className="text-amber-300 font-mono px-1">{rawFormula}</code>;
+            return <code key={key} className="text-amber-600 dark:text-amber-300 font-mono px-1">{rawFormula}</code>;
           }
         }
 
@@ -135,9 +136,9 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
           try {
             const latexForm = part.replace('10^8', '10^8').replace('²', '^2').replace('³', '^3');
             const html = katex.renderToString(latexForm, { displayMode: false, throwOnError: false });
-            return <span key={key} className="inline-block px-1 font-semibold text-cyan-300" dangerouslySetInnerHTML={{ __html: html }} />;
+            return <span key={key} className="inline-block px-1 font-semibold text-cyan-700 dark:text-cyan-300" dangerouslySetInnerHTML={{ __html: html }} />;
           } catch {
-            return <span key={key} className="font-mono text-cyan-300 font-bold px-1">{part}</span>;
+            return <span key={key} className="font-mono text-cyan-700 dark:text-cyan-300 font-bold px-1">{part}</span>;
           }
         }
 
@@ -145,12 +146,45 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
       });
     };
 
-    for (let idx = 0; idx < lines.length; idx++) {
-      const line = lines[idx];
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
       const trimmed = line.trim();
-      const lineKey = `line-${idx}`;
+      const lineKey = `line-${i}`;
 
-      // Check explicit markdown code fences ```
+      // 1. Check if a sequence of "Bước X: ..." lines starts here to render as StepRoadmap Mindmap
+      if (/^Bước\s+\d+[:\.]/i.test(trimmed)) {
+        const stepItems: { step: number; title: string; detail?: string }[] = [];
+        let j = i;
+        while (j < lines.length) {
+          const curTrim = lines[j].trim();
+          const stepMatch = curTrim.match(/^Bước\s+(\d+)[:\.]\s*(.*)$/i);
+          if (stepMatch) {
+            const stepNum = parseInt(stepMatch[1], 10);
+            const rawTitle = stepMatch[2].trim();
+            // Look ahead for next line if it's detail
+            let detail: string | undefined = undefined;
+            if (j + 1 < lines.length && !lines[j + 1].trim().startsWith('Bước ') && lines[j + 1].trim().length > 0 && !lines[j + 1].trim().startsWith('#')) {
+              detail = lines[j + 1].trim();
+              j++;
+            }
+            stepItems.push({ step: stepNum, title: rawTitle || `Bước ${stepNum}`, detail });
+            j++;
+          } else {
+            break;
+          }
+        }
+
+        if (stepItems.length >= 2) {
+          resultNodes.push(
+            <StepRoadmap key={`${lineKey}-roadmap`} steps={stepItems} />
+          );
+          i = j;
+          continue;
+        }
+      }
+
+      // 2. Check explicit markdown code fences ```
       if (trimmed.startsWith('```')) {
         if (insideCode) {
           flushCodeBlock(lineKey);
@@ -159,10 +193,11 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
           const lang = trimmed.replace(/^```/, '').trim().toLowerCase();
           codeLanguage = lang || 'cpp';
         }
+        i++;
         continue;
       }
 
-      // Detect start of code without markdown fences
+      // 3. Detect start of code without markdown fences
       const isCppStart =
         trimmed.startsWith('#include <') ||
         trimmed.startsWith('using namespace std;') ||
@@ -179,12 +214,12 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
         insideCode = true;
         codeLanguage = isCppStart ? 'cpp' : 'python';
         codeLines.push(line);
+        i++;
         continue;
       }
 
       // If inside code, detect if code has ended
       if (insideCode) {
-        // Line that clearly belongs to narrative text instead of code
         const isEndOfCode =
           /^\d+\.\s+[A-ZÀ-Ỹ]/.test(trimmed) ||
           trimmed.startsWith('Giải thích') ||
@@ -199,6 +234,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
           flushCodeBlock(lineKey);
         } else {
           codeLines.push(line);
+          i++;
           continue;
         }
       }
@@ -208,35 +244,38 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
         const text = trimmed.replace(/^#+\s*/, '');
         resultNodes.push(
           <div key={lineKey} className="mt-7 mb-3">
-            <h3 className="text-base sm:text-lg font-bold text-white border-b border-slate-800 pb-2 flex items-center gap-2.5">
-              <span className="w-1.5 h-4.5 rounded-full bg-cyan-400" />
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center gap-2.5">
+              <span className="w-1.5 h-4.5 rounded-full bg-cyan-500" />
               <span>{text}</span>
             </h3>
           </div>
         );
+        i++;
         continue;
       }
 
       // Numbered major section: "1. Lập trình thi đấu là gì?"
       if (/^\d+\.\s+/.test(trimmed)) {
         resultNodes.push(
-          <div key={lineKey} className="mt-6 mb-2.5 bg-slate-900/60 border-l-2 border-cyan-500 pl-3 py-1 rounded-r-lg">
-            <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+          <div key={lineKey} className="mt-6 mb-2.5 bg-slate-100 dark:bg-slate-900/60 border-l-3 border-cyan-500 pl-3 py-1.5 rounded-r-lg">
+            <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
               {renderInlineMathAndText(trimmed, lineKey)}
             </h4>
           </div>
         );
+        i++;
         continue;
       }
 
       // Subsections "2.1. ..."
       if (/^\d+\.\d+\.\s+/.test(trimmed)) {
         resultNodes.push(
-          <h5 key={lineKey} className="text-xs sm:text-sm font-bold text-cyan-300 mt-4 mb-1 pl-1">
+          <h5 key={lineKey} className="text-xs sm:text-sm font-bold text-cyan-700 dark:text-cyan-300 mt-4 mb-1 pl-1">
             {renderInlineMathAndText(trimmed, lineKey)}
           </h5>
         );
+        i++;
         continue;
       }
 
@@ -244,13 +283,14 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
       if (trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
         const bulletContent = trimmed.replace(/^[•\-\*]\s*/, '');
         resultNodes.push(
-          <div key={lineKey} className="flex items-start gap-2.5 my-1 text-slate-300 pl-2 text-xs sm:text-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2 shrink-0" />
+          <div key={lineKey} className="flex items-start gap-2.5 my-1 text-slate-800 dark:text-slate-300 pl-2 text-xs sm:text-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 mt-2 shrink-0" />
             <div className="flex-1 leading-relaxed">
               {renderInlineMathAndText(bulletContent, lineKey)}
             </div>
           </div>
         );
+        i++;
         continue;
       }
 
@@ -258,28 +298,31 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
       if (trimmed.startsWith('◦')) {
         const subContent = trimmed.replace(/^◦\s*/, '');
         resultNodes.push(
-          <div key={lineKey} className="flex items-start gap-2 my-0.5 text-slate-400 pl-6 text-xs sm:text-sm">
-            <span className="w-1 h-1 rounded-full bg-slate-600 mt-2 shrink-0" />
+          <div key={lineKey} className="flex items-start gap-2 my-0.5 text-slate-700 dark:text-slate-400 pl-6 text-xs sm:text-sm">
+            <span className="w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-600 mt-2 shrink-0" />
             <div className="flex-1 leading-relaxed">
               {renderInlineMathAndText(subContent, lineKey)}
             </div>
           </div>
         );
+        i++;
         continue;
       }
 
       // Empty space
       if (!trimmed) {
         resultNodes.push(<div key={lineKey} className="h-2" />);
+        i++;
         continue;
       }
 
-      // Regular paragraph
+      // Regular paragraph: text-slate-900 in light mode, text-slate-200 in dark mode
       resultNodes.push(
-        <p key={lineKey} className="my-1.5 leading-relaxed text-slate-300 text-xs sm:text-sm">
+        <p key={lineKey} className="my-1.5 leading-relaxed text-slate-900 dark:text-slate-200 text-xs sm:text-sm">
           {renderInlineMathAndText(line, lineKey)}
         </p>
       );
+      i++;
     }
 
     if (insideCode) {
@@ -289,5 +332,5 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
     return resultNodes;
   }, [content]);
 
-  return <div className={`select-text space-y-1 ${className}`}>{elements}</div>;
+  return <div className={`select-text space-y-1 text-slate-900 dark:text-slate-100 ${className}`}>{elements}</div>;
 };
