@@ -6,21 +6,21 @@ interface AuthContextType {
   accounts: UserAccount[];
   login: (username: string, password?: string) => boolean;
   logout: () => void;
-  createStudent: (username: string, fullName: string, schoolClass: string) => boolean;
+  createStudent: (username: string, password: string, fullName: string, schoolClass: string) => boolean;
   deleteStudent: (id: string) => void;
   resetStudentProgress: (id: string) => void;
   updateCurrentUserProgress: (updater: (prev: UserAccount) => UserAccount) => void;
 }
 
-const ACCOUNTS_STORAGE_KEY = 'thpt_office_accounts_v1';
-const CURRENT_USER_KEY = 'thpt_office_current_user_v1';
+const ACCOUNTS_STORAGE_KEY = 'thpt_office_accounts_v2';
+const CURRENT_USER_KEY = 'thpt_office_current_user_v2';
 
 const defaultAccounts: UserAccount[] = [
   {
-    id: 'teacher-1',
-    username: 'giaovien',
-    password: '123',
-    fullName: 'Thầy / Cô Quản Lý Tin Học THPT',
+    id: 'admin-teacher',
+    username: 'admin',
+    password: 'Nhat30655',
+    fullName: 'Giáo Viên Quản Trị Hệ Thống',
     role: 'teacher',
     xpPoints: 999,
     streak: 30,
@@ -57,20 +57,6 @@ const defaultAccounts: UserAccount[] = [
       'excel-lesson-1': { theoryCompleted: true, practiceCompleted: false, quizScore: 0, quizCompleted: false, isUnlocked: true },
     },
     createdAt: new Date().toISOString()
-  },
-  {
-    id: 'student-3',
-    username: 'hocvien3',
-    password: '123',
-    fullName: 'Lê Hoàng Nam',
-    role: 'student',
-    schoolClass: '11B1',
-    xpPoints: 60,
-    streak: 1,
-    progress: {
-      'word-lesson-1': { theoryCompleted: true, practiceCompleted: false, quizScore: 0, quizCompleted: false, isUnlocked: true },
-    },
-    createdAt: new Date().toISOString()
   }
 ];
 
@@ -81,7 +67,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Ensure admin account always has correct username 'admin' and password 'Nhat30655'
+        const hasAdmin = parsed.some((a: UserAccount) => a.username.toLowerCase() === 'admin');
+        if (hasAdmin) {
+          return parsed.map((a: UserAccount) =>
+            a.username.toLowerCase() === 'admin'
+              ? { ...a, username: 'admin', password: 'Nhat30655', role: 'teacher' }
+              : a
+          );
+        }
+        return [defaultAccounts[0], ...parsed];
       }
     } catch {
       // ignore
@@ -98,8 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // ignore
     }
-    // Default to student-1 for immediate seamless preview, or null
-    return defaultAccounts[1];
+    return null; // Require login first!
   });
 
   useEffect(() => {
@@ -123,13 +118,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currentUser]);
 
   const login = (username: string, password?: string): boolean => {
-    const found = accounts.find(
-      acc => acc.username.toLowerCase() === username.trim().toLowerCase()
-    );
+    const trimmedUser = username.trim().toLowerCase();
+    const trimmedPass = password ? password.trim() : '';
+
+    const found = accounts.find(acc => acc.username.toLowerCase() === trimmedUser);
     if (!found) return false;
-    if (password && found.password && found.password !== password.trim()) {
+
+    if (found.password && found.password !== trimmedPass) {
       return false;
     }
+
     setCurrentUser(found);
     return true;
   };
@@ -138,7 +136,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(null);
   };
 
-  const createStudent = (username: string, fullName: string, schoolClass: string): boolean => {
+  const createStudent = (
+    username: string,
+    password: string,
+    fullName: string,
+    schoolClass: string
+  ): boolean => {
     const exists = accounts.some(
       a => a.username.toLowerCase() === username.trim().toLowerCase()
     );
@@ -147,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newStudent: UserAccount = {
       id: 'student-' + Date.now(),
       username: username.trim(),
-      password: '123',
+      password: password.trim() || '123456',
       fullName: fullName.trim(),
       role: 'student',
       schoolClass: schoolClass.trim(),

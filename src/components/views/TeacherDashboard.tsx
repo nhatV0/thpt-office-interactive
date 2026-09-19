@@ -8,7 +8,9 @@ import {
   Award,
   Search,
   ShieldCheck,
-  GraduationCap
+  GraduationCap,
+  KeyRound,
+  Check
 } from 'lucide-react';
 
 export const TeacherDashboard: React.FC = () => {
@@ -18,9 +20,11 @@ export const TeacherDashboard: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newFullName, setNewFullName] = useState('');
   const [newClass, setNewClass] = useState('12A1');
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const students = accounts.filter(a => a.role === 'student');
 
@@ -36,22 +40,25 @@ export const TeacherDashboard: React.FC = () => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUsername.trim() || !newFullName.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ tên đăng nhập và họ tên học viên.');
+    if (!newUsername.trim() || !newFullName.trim() || !newPassword.trim()) {
+      setErrorMsg('Vui lòng điền đầy đủ tên đăng nhập, mật khẩu và họ tên học viên.');
       return;
     }
-    const success = createStudent(newUsername, newFullName, newClass);
+    const success = createStudent(newUsername, newPassword, newFullName, newClass);
     if (!success) {
-      setErrorMsg('Tên đăng nhập này đã tồn tại trong hệ thống.');
+      setErrorMsg('Tên đăng nhập này đã tồn tại trong hệ thống. Vui lòng chọn tên khác.');
       return;
     }
+    setSuccessMsg(`Đã cấp thành công tài khoản @${newUsername.trim()} cho học sinh ${newFullName.trim()}.`);
     setNewUsername('');
+    setNewPassword('');
     setNewFullName('');
     setErrorMsg('');
     setShowAddModal(false);
+    setTimeout(() => setSuccessMsg(''), 4000);
   };
 
-  const totalLessons = 18; // 6 word + 7 excel + 5 powerpoint
+  const totalLessons = 18;
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
@@ -60,25 +67,35 @@ export const TeacherDashboard: React.FC = () => {
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-sky-300 text-xs font-semibold">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Khu Vực Quản Trị Giáo Viên</span>
+            <span>Khu Vực Quản Trị Giáo Viên (Admin)</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold">
-            Bảng Điều Khiển Học Viên & Tiến Độ Học Tập
+            Cấp Tài Khoản & Theo Dõi Học Viên
           </h2>
           <p className="text-xs sm:text-sm text-slate-300">
-            Theo dõi tiến độ hoàn thành các bài học Word, Excel, PowerPoint và quản lý tài khoản học sinh toàn trường.
+            Cấp tài khoản và mật khẩu cho học sinh, giám sát tiến độ làm bài và toàn quyền truy cập tất cả bài học.
           </p>
         </div>
 
         <button
           type="button"
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setErrorMsg('');
+            setShowAddModal(true);
+          }}
           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow transition-all cursor-pointer shrink-0"
         >
           <UserPlus className="w-4 h-4" />
-          <span>Thêm Học Viên Mới</span>
+          <span>Cấp Tài Khoản Học Viên Mới</span>
         </button>
       </div>
+
+      {successMsg && (
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold rounded-2xl flex items-center gap-2">
+          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{successMsg}</span>
+        </div>
+      )}
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -87,7 +104,7 @@ export const TeacherDashboard: React.FC = () => {
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xs text-slate-500 block">Tổng số học viên</span>
+            <span className="text-xs text-slate-500 block">Tổng số học viên đã cấp</span>
             <span className="text-xl font-black text-slate-900 dark:text-slate-100">
               {students.length} em
             </span>
@@ -128,7 +145,7 @@ export const TeacherDashboard: React.FC = () => {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo họ tên hoặc tên đăng nhập học viên..."
+            placeholder="Tìm kiếm theo họ tên hoặc tài khoản học viên..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-sky-500 text-slate-800 dark:text-slate-200"
@@ -160,11 +177,11 @@ export const TeacherDashboard: React.FC = () => {
           <table className="w-full border-collapse text-left text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider">
-                <th className="p-3.5 pl-5">Học Viên</th>
+                <th className="p-3.5 pl-5">Học Viên & Tài Khoản</th>
+                <th className="p-3.5">Mật Khẩu Cấp</th>
                 <th className="p-3.5">Lớp</th>
                 <th className="p-3.5">Tiến Độ Bài Học</th>
                 <th className="p-3.5 text-center">Điểm XP</th>
-                <th className="p-3.5 text-center">Chuỗi Ngày</th>
                 <th className="p-3.5 text-right pr-5">Thao Tác</th>
               </tr>
             </thead>
@@ -198,10 +215,17 @@ export const TeacherDashboard: React.FC = () => {
                               {student.fullName}
                             </span>
                             <span className="text-[11px] text-slate-400 font-mono">
-                              @{student.username}
+                              TK: @{student.username}
                             </span>
                           </div>
                         </div>
+                      </td>
+
+                      {/* Password */}
+                      <td className="p-3.5 font-mono text-slate-600 dark:text-slate-400">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                          {student.password || '••••••'}
+                        </span>
                       </td>
 
                       {/* Class */}
@@ -233,13 +257,6 @@ export const TeacherDashboard: React.FC = () => {
                       <td className="p-3.5 text-center">
                         <span className="font-bold text-amber-600 dark:text-amber-400">
                           {student.xpPoints} XP
-                        </span>
-                      </td>
-
-                      {/* Streak */}
-                      <td className="p-3.5 text-center">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">
-                          {student.streak} ngày
                         </span>
                       </td>
 
@@ -289,14 +306,17 @@ export const TeacherDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal Add Student */}
+      {/* Modal Add Student with Custom Password */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                Thêm Học Viên Mới
-              </h3>
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-sky-600" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Cấp Tài Khoản & Mật Khẩu
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
@@ -315,19 +335,6 @@ export const TeacherDashboard: React.FC = () => {
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Tên Đăng Nhập (Username)
-                </label>
-                <input
-                  type="text"
-                  placeholder="ví dụ: hocvien4"
-                  value={newUsername}
-                  onChange={e => setNewUsername(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                   Họ và Tên Học Viên
                 </label>
                 <input
@@ -335,7 +342,33 @@ export const TeacherDashboard: React.FC = () => {
                   placeholder="ví dụ: Nguyễn Hoàng Nam"
                   value={newFullName}
                   onChange={e => setNewFullName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-sky-500"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-sky-500 text-slate-900 dark:text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Tên Đăng Nhập (Tài khoản)
+                </label>
+                <input
+                  type="text"
+                  placeholder="ví dụ: namnh12a1"
+                  value={newUsername}
+                  onChange={e => setNewUsername(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-sky-500 text-slate-900 dark:text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Mật Khẩu Cấp Cho Học Viên
+                </label>
+                <input
+                  type="text"
+                  placeholder="Nhập mật khẩu cấp cho học sinh..."
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-sky-500 text-slate-900 dark:text-slate-100 font-mono"
                 />
               </div>
 
@@ -348,7 +381,7 @@ export const TeacherDashboard: React.FC = () => {
                   placeholder="ví dụ: 12A1, 11B2..."
                   value={newClass}
                   onChange={e => setNewClass(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-sky-500"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-sky-500 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -364,7 +397,7 @@ export const TeacherDashboard: React.FC = () => {
                   type="submit"
                   className="px-4 py-2 text-xs font-bold rounded-xl bg-sky-600 hover:bg-sky-700 text-white shadow cursor-pointer"
                 >
-                  Thêm Học Viên
+                  Lưu & Cấp Tài Khoản
                 </button>
               </div>
             </form>

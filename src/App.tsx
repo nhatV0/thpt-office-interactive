@@ -8,7 +8,7 @@ import { CurriculumView } from './components/views/CurriculumView';
 import { LessonUnitView } from './components/views/LessonUnitView';
 import { TeacherDashboard } from './components/views/TeacherDashboard';
 import { SummaryModal } from './components/modals/SummaryModal';
-import { LoginModal } from './components/modals/LoginModal';
+import { LoginPage } from './components/views/LoginPage';
 
 const AppContent: React.FC = () => {
   const {
@@ -36,9 +36,7 @@ const AppContent: React.FC = () => {
   });
 
   const [isSummaryOpen, setIsSummaryOpen] = useState<boolean>(false);
-  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
 
-  // Apply dark mode reliably to both html and documentElement
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -48,6 +46,11 @@ const AppContent: React.FC = () => {
       localStorage.setItem('thpt_office_theme', 'light');
     }
   }, [darkMode]);
+
+  // If user is not logged in, ALWAYS show the dedicated LoginPage!
+  if (!currentUser) {
+    return <LoginPage />;
+  }
 
   const currentModule = CURRICULUM_DATA[activeModuleId];
   const currentLesson =
@@ -96,7 +99,7 @@ const AppContent: React.FC = () => {
         onToggleDarkMode={() => setDarkMode(prev => !prev)}
         onGoHome={() => setViewMode('curriculum')}
         onOpenDashboard={() => setViewMode('dashboard')}
-        onOpenLogin={() => setIsLoginOpen(true)}
+        onOpenLogin={() => {}}
         currentView={viewMode}
       />
 
@@ -129,15 +132,6 @@ const AppContent: React.FC = () => {
           onClose={() => setIsSummaryOpen(false)}
         />
       )}
-
-      {/* Login / Switch Account Modal */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onSuccess={() => {
-          // If teacher logged in, offer to stay or view dashboard
-        }}
-      />
     </div>
   );
 };

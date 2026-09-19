@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLearning } from '../../context/LearningContext';
+import { useAuth } from '../../context/AuthContext';
 import type { ModuleType } from '../../types/curriculum';
 import { CURRICULUM_DATA } from '../../data/curriculumData';
 import {
@@ -20,6 +21,8 @@ interface CurriculumViewProps {
 
 export const CurriculumView: React.FC<CurriculumViewProps> = ({ onSelectLesson }) => {
   const { activeModuleId, setActiveModuleId, userProgress } = useLearning();
+  const { currentUser } = useAuth();
+  const isTeacher = currentUser?.role === 'teacher';
 
   const currentModule = CURRICULUM_DATA[activeModuleId];
 
@@ -198,7 +201,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ onSelectLesson }
               isUnlocked: lesson.order === 1
             };
             const isFinished = p.theoryCompleted && p.practiceCompleted && p.quizCompleted;
-            const isUnlocked = p.isUnlocked;
+            const isUnlocked = isTeacher || p.isUnlocked;
 
             return (
               <div
