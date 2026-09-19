@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Home,
   Users,
+  FolderArchive,
   LogIn,
   LogOut
 } from 'lucide-react';
@@ -18,8 +19,9 @@ interface HeaderNavProps {
   onToggleDarkMode: () => void;
   onGoHome: () => void;
   onOpenDashboard: () => void;
+  onOpenPractice: () => void;
   onOpenLogin: () => void;
-  currentView: 'curriculum' | 'lesson' | 'dashboard';
+  currentView: 'curriculum' | 'lesson' | 'dashboard' | 'practice';
 }
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({
@@ -27,6 +29,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onToggleDarkMode,
   onGoHome,
   onOpenDashboard,
+  onOpenPractice,
   onOpenLogin,
   currentView
 }) => {
@@ -52,6 +55,20 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           <span className="hidden xs:inline">Trang Chủ</span>
         </button>
 
+        {/* Nút Đề Ôn Luyện Cuối Khóa MOS Word */}
+        <button
+          type="button"
+          onClick={onOpenPractice}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+            currentView === 'practice'
+              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+              : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+          }`}
+          title="Tải gói thực hành và xem đề thi MOS Word 2019"
+        >
+          <FolderArchive className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="hidden sm:inline">Ôn Luyện MOS Word 2019</span>
+        </button>
         {/* Nút Quản Lý Học Viên (Chế độ giáo viên) */}
         {currentUser?.role === 'teacher' && (
           <button

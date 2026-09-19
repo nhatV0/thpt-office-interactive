@@ -7,6 +7,7 @@ import { HeaderNav } from './components/navigation/HeaderNav';
 import { CurriculumView } from './components/views/CurriculumView';
 import { LessonUnitView } from './components/views/LessonUnitView';
 import { TeacherDashboard } from './components/views/TeacherDashboard';
+import { WordPracticeReviewView } from './components/views/WordPracticeReviewView';
 import { SummaryModal } from './components/modals/SummaryModal';
 import { LoginPage } from './components/views/LoginPage';
 
@@ -21,8 +22,7 @@ const AppContent: React.FC = () => {
   } = useLearning();
 
   const { currentUser } = useAuth();
-
-  const [viewMode, setViewMode] = useState<'curriculum' | 'lesson' | 'dashboard'>('curriculum');
+  const [viewMode, setViewMode] = useState<'curriculum' | 'lesson' | 'dashboard' | 'practice'>('curriculum');
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
       const savedTheme = localStorage.getItem('thpt_office_theme');
@@ -99,16 +99,22 @@ const AppContent: React.FC = () => {
         onToggleDarkMode={() => setDarkMode(prev => !prev)}
         onGoHome={() => setViewMode('curriculum')}
         onOpenDashboard={() => setViewMode('dashboard')}
+        onOpenPractice={() => setViewMode('practice')}
         onOpenLogin={() => {}}
         currentView={viewMode}
       />
 
       {/* Main View Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {viewMode === 'dashboard' && currentUser?.role === 'teacher' ? (
+        {viewMode === 'practice' ? (
+          <WordPracticeReviewView />
+        ) : viewMode === 'dashboard' && currentUser?.role === 'teacher' ? (
           <TeacherDashboard />
         ) : viewMode === 'curriculum' ? (
-          <CurriculumView onSelectLesson={handleSelectLesson} />
+          <CurriculumView
+            onSelectLesson={handleSelectLesson}
+            onOpenPractice={() => setViewMode('practice')}
+          />
         ) : (
           <LessonUnitView
             onBackToCurriculum={() => setViewMode('curriculum')}
