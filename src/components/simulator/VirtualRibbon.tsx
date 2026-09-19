@@ -227,6 +227,25 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
                   <ImageIcon className="w-3.5 h-3.5" />
                   <span>Wrap Square</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => onAction('word-wrap-tight')}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs border rounded bg-white dark:bg-slate-800 ${
+                    isHinted('word-wrap-tight') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-sky-600" />
+                  <span>Wrap Tight</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onAction('word-insert-hyperlink')}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs border rounded bg-white dark:bg-slate-800 ${
+                    isHinted('word-insert-hyperlink') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <span>Link (Ctrl+K)</span>
+                </button>
               </div>
             </div>
 
@@ -290,6 +309,15 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
                 >
                   Size: A4
                 </button>
+                <button
+                  type="button"
+                  onClick={() => onAction('word-break-continuous')}
+                  className={`px-2 py-1 text-xs border rounded bg-white dark:bg-slate-800 ${
+                    isHinted('word-break-continuous') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  Continuous Break
+                </button>
               </div>
             </div>
 
@@ -313,6 +341,15 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
                   }`}
                 >
                   Repeat Header Rows
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onAction('word-convert-table-text')}
+                  className={`px-2 py-1 text-xs border rounded bg-white dark:bg-slate-800 ${
+                    isHinted('word-convert-table-text') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  Convert to Text (Tabs)
                 </button>
               </div>
             </div>

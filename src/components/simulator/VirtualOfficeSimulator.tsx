@@ -169,6 +169,16 @@ export const VirtualOfficeSimulator: React.FC<VirtualOfficeSimulatorProps> = ({
       case 'word-update-toc':
         setWordState(s => ({ ...s, tocUpdated: true }));
         break;
+      case 'word-convert-table-text':
+        setWordState(s => ({ ...s, hasTable: false }));
+        break;
+      case 'word-insert-hyperlink':
+        break;
+      case 'word-break-continuous':
+        break;
+      case 'word-wrap-tight':
+        setWordState(s => ({ ...s, wrapStyle: 'tight' }));
+        break;
 
       // Excel Actions
       case 'excel-format-comma':
