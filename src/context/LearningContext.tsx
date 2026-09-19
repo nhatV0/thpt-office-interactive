@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ModuleType, UserProgressState } from '../types/curriculum';
 import { CURRICULUM_DATA } from '../data/curriculumData';
 import { useAuth } from './AuthContext';
@@ -54,15 +54,38 @@ const LearningContext = createContext<LearningContextType | undefined>(undefined
 export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, updateCurrentUserProgress } = useAuth();
 
-  const [activeModuleId, setActiveModuleId] = useState<ModuleType>('word');
-  const [activeLessonId, setActiveLessonId] = useState<string>('word-lesson-1');
+  const isTeacher = currentUser?.role === 'teacher';
+  const allowedCourses = isTeacher
+    ? ['word', 'excel', 'powerpoint']
+    : currentUser?.allowedCourses && currentUser.allowedCourses.length > 0
+    ? currentUser.allowedCourses
+    : ['word'];
+
+  const initialModule = (allowedCourses[0] as ModuleType) || 'word';
+  const [activeModuleId, setActiveModuleIdState] = useState<ModuleType>(initialModule);
+  const [activeLessonId, setActiveLessonId] = useState<string>(`${initialModule}-lesson-1`);
   const [currentTab, setCurrentTab] = useState<'theory' | 'practice' | 'quiz'>('theory');
+
+  // Keep activeModuleId within allowed courses
+  useEffect(() => {
+    if (!allowedCourses.includes(activeModuleId)) {
+      const fallback = (allowedCourses[0] as ModuleType) || 'word';
+      setActiveModuleIdState(fallback);
+      setActiveLessonId(`${fallback}-lesson-1`);
+    }
+  }, [allowedCourses, activeModuleId]);
+
+  const setActiveModuleId = (id: ModuleType) => {
+    if (allowedCourses.includes(id)) {
+      setActiveModuleIdState(id);
+      setActiveLessonId(`${id}-lesson-1`);
+    }
+  };
 
   // If currentUser has progress, sync with it; otherwise use default
   const userProgress = currentUser?.progress
     ? { ...defaultProgress, ...currentUser.progress }
     : defaultProgress;
-
   const xpPoints = currentUser?.xpPoints ?? 0;
   const streak = currentUser?.streak ?? 1;
 

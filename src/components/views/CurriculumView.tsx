@@ -24,9 +24,14 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ onSelectLesson, 
   const { activeModuleId, setActiveModuleId, userProgress } = useLearning();
   const { currentUser } = useAuth();
   const isTeacher = currentUser?.role === 'teacher';
+  const allowedCourses = isTeacher
+    ? ['word', 'excel', 'powerpoint']
+    : currentUser?.allowedCourses && currentUser.allowedCourses.length > 0
+    ? currentUser.allowedCourses
+    : ['word'];
 
+  const isCourseAllowed = (modId: string) => allowedCourses.includes(modId);
   const currentModule = CURRICULUM_DATA[activeModuleId];
-
   const calculateModuleProgress = (modId: ModuleType) => {
     const mod = CURRICULUM_DATA[modId];
     let completed = 0;
@@ -97,114 +102,149 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ onSelectLesson, 
       {/* Module Selector Tabs (Word -> Excel -> PowerPoint) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Word Card */}
-        <button
-          type="button"
-          onClick={() => setActiveModuleId('word')}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-            activeModuleId === 'word'
-              ? 'border-sky-500 ring-2 ring-sky-200 dark:ring-sky-900 bg-white dark:bg-slate-900 shadow-md'
-              : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
-                <FileText className="w-4 h-4" />
+        <div className="relative">
+          <button
+            type="button"
+            disabled={!isCourseAllowed('word')}
+            onClick={() => setActiveModuleId('word')}
+            className={`w-full p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
+              !isCourseAllowed('word')
+                ? 'opacity-60 bg-slate-100 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+                : activeModuleId === 'word'
+                ? 'border-sky-500 ring-2 ring-sky-200 dark:ring-sky-900 bg-white dark:bg-slate-900 shadow-md cursor-pointer'
+                : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      Microsoft Word
+                    </h3>
+                    {!isCourseAllowed('word') && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 text-[9px] font-bold rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                        <Lock className="w-2.5 h-2.5" /> Chưa mở
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Soạn thảo văn bản</span>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Microsoft Word
-                </h3>
-                <span className="text-[10px] text-slate-500">Soạn thảo văn bản</span>
-              </div>
+              <span className="text-xs font-bold text-sky-600 dark:text-sky-400">
+                {wordProgress.percentage}%
+              </span>
             </div>
-            <span className="text-xs font-bold text-sky-600 dark:text-sky-400">
-              {wordProgress.percentage}%
-            </span>
-          </div>
-          {/* Progress bar */}
-          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
-            <div
-              className="h-full bg-sky-600 rounded-full transition-all duration-300"
-              style={{ width: `${wordProgress.percentage}%` }}
-            />
-          </div>
-        </button>
+            {/* Progress bar */}
+            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
+              <div
+                className="h-full bg-sky-600 rounded-full transition-all duration-300"
+                style={{ width: `${wordProgress.percentage}%` }}
+              />
+            </div>
+          </button>
+        </div>
 
         {/* Excel Card */}
-        <button
-          type="button"
-          onClick={() => setActiveModuleId('excel')}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-            activeModuleId === 'excel'
-              ? 'border-emerald-500 ring-2 ring-emerald-200 dark:ring-emerald-900 bg-white dark:bg-slate-900 shadow-md'
-              : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                <TableIcon className="w-4 h-4" />
+        <div className="relative">
+          <button
+            type="button"
+            disabled={!isCourseAllowed('excel')}
+            onClick={() => setActiveModuleId('excel')}
+            className={`w-full p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
+              !isCourseAllowed('excel')
+                ? 'opacity-60 bg-slate-100 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+                : activeModuleId === 'excel'
+                ? 'border-emerald-500 ring-2 ring-emerald-200 dark:ring-emerald-900 bg-white dark:bg-slate-900 shadow-md cursor-pointer'
+                : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                  <TableIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      Microsoft Excel
+                    </h3>
+                    {!isCourseAllowed('excel') && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 text-[9px] font-bold rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                        <Lock className="w-2.5 h-2.5" /> Chưa mở
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Bảng tính điện tử</span>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Microsoft Excel
-                </h3>
-                <span className="text-[10px] text-slate-500">Bảng tính điện tử</span>
-              </div>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                {excelProgress.percentage}%
+              </span>
             </div>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              {excelProgress.percentage}%
-            </span>
-          </div>
-          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
-            <div
-              className="h-full bg-emerald-600 rounded-full transition-all duration-300"
-              style={{ width: `${excelProgress.percentage}%` }}
-            />
-          </div>
-        </button>
-
+            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
+              <div
+                className="h-full bg-emerald-600 rounded-full transition-all duration-300"
+                style={{ width: `${excelProgress.percentage}%` }}
+              />
+            </div>
+          </button>
+        </div>
         {/* PowerPoint Card */}
-        <button
-          type="button"
-          onClick={() => setActiveModuleId('powerpoint')}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-            activeModuleId === 'powerpoint'
-              ? 'border-rose-500 ring-2 ring-rose-200 dark:ring-rose-900 bg-white dark:bg-slate-900 shadow-md'
-              : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
-                <Presentation className="w-4 h-4" />
+        <div className="relative">
+          <button
+            type="button"
+            disabled={!isCourseAllowed('powerpoint')}
+            onClick={() => setActiveModuleId('powerpoint')}
+            className={`w-full p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
+              !isCourseAllowed('powerpoint')
+                ? 'opacity-60 bg-slate-100 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+                : activeModuleId === 'powerpoint'
+                ? 'border-rose-500 ring-2 ring-rose-200 dark:ring-rose-900 bg-white dark:bg-slate-900 shadow-md cursor-pointer'
+                : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
+                  <Presentation className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      PowerPoint
+                    </h3>
+                    {!isCourseAllowed('powerpoint') && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 text-[9px] font-bold rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                        <Lock className="w-2.5 h-2.5" /> Chưa mở
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500">Trình chiếu đồ họa</span>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  PowerPoint
-                </h3>
-                <span className="text-[10px] text-slate-500">Trình chiếu đồ họa</span>
-              </div>
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                {ppProgress.percentage}%
+              </span>
             </div>
-            <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
-              {ppProgress.percentage}%
-            </span>
-          </div>
-          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
-            <div
-              className="h-full bg-rose-600 rounded-full transition-all duration-300"
-              style={{ width: `${ppProgress.percentage}%` }}
-            />
-          </div>
-        </button>
+            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
+              <div
+                className="h-full bg-rose-600 rounded-full transition-all duration-300"
+                style={{ width: `${ppProgress.percentage}%` }}
+              />
+            </div>
+          </button>
+        </div>
       </div>
 
-      {/* Current Active Module Lessons Track */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+      {/* Current Module Header & Badge */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
               {currentModule.name}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -228,8 +268,8 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ onSelectLesson, 
               isUnlocked: lesson.order === 1
             };
             const isFinished = p.theoryCompleted && p.practiceCompleted && p.quizCompleted;
-            const isUnlocked = isTeacher || p.isUnlocked;
-
+            const isCourseLocked = !isCourseAllowed(activeModuleId);
+            const isUnlocked = !isCourseLocked && (isTeacher || p.isUnlocked);
             return (
               <div
                 key={lesson.id}
@@ -316,17 +356,23 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ onSelectLesson, 
                     </span>
                   </div>
 
-                  {/* Start / Continue Button */}
-                  {isUnlocked ? (
+                  {isCourseLocked ? (
+                    <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 px-3 py-1.5 rounded-xl">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Chưa được cấp quyền</span>
+                    </div>
+                  ) : isUnlocked ? (
                     <button
                       type="button"
                       onClick={() => onSelectLesson(activeModuleId, lesson.id)}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-xs cursor-pointer ${
-                        activeModuleId === 'word'
-                          ? 'bg-sky-600 hover:bg-sky-700'
+                      className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0 ${
+                        isFinished
+                          ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                          : activeModuleId === 'word'
+                          ? 'bg-sky-600 hover:bg-sky-500 text-white'
                           : activeModuleId === 'excel'
-                          ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : 'bg-rose-600 hover:bg-rose-700'
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                          : 'bg-rose-600 hover:bg-rose-500 text-white'
                       }`}
                     >
                       <span>{isFinished ? 'Ôn tập lại' : 'Vào bài học'}</span>

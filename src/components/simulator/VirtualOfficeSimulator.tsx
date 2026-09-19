@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import confetti from 'canvas-confetti';
 import type { ModuleType, SimulatorTask } from '../../types/curriculum';
+import { triggerConfetti, playRewardChime } from '../../utils/celebration';
 import { VirtualRibbon } from './VirtualRibbon';
 import { VirtualCanvas } from './VirtualCanvas';
 import { CheckCircle2, AlertCircle, HelpCircle, RotateCcw, ArrowRight } from 'lucide-react';
@@ -91,15 +91,8 @@ export const VirtualOfficeSimulator: React.FC<VirtualOfficeSimulatorProps> = ({
 
   const triggerSuccess = () => {
     setTaskSuccess(true);
-    try {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.8 }
-      });
-    } catch {
-      // ignore
-    }
+    triggerConfetti('subtle');
+    playRewardChime('task');
   };
 
   const handleNextTask = () => {
@@ -329,14 +322,14 @@ export const VirtualOfficeSimulator: React.FC<VirtualOfficeSimulatorProps> = ({
         break;
     }
 
-    // Check task validation
     if (activeTask && activeTask.actionKey === actionKey) {
       triggerSuccess();
     }
   };
-  const handleCellFormulaSubmit = () => {
-    if (!activeTask || !activeTask.expectedValue) return;
 
+
+  const handleApplyFormula = () => {
+    if (!activeTask || !activeTask.expectedValue) return;
     const normalize = (val: string) =>
       val
         .replace(/['']/g, '"')
@@ -507,7 +500,7 @@ export const VirtualOfficeSimulator: React.FC<VirtualOfficeSimulatorProps> = ({
           }));
         }}
         onFormulaChange={val => setExcelState(s => ({ ...s, formulaValue: val }))}
-        onFormulaSubmit={handleCellFormulaSubmit}
+        onFormulaSubmit={handleApplyFormula}
         onSelectSlide={idx => setPpState(s => ({ ...s, currentSlideIndex: idx }))}
       />
     </div>

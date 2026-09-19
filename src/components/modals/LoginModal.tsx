@@ -23,9 +23,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       setErrorMsg('Vui lòng nhập tên tài khoản.');
       return;
     }
-    const success = login(username, password);
-    if (!success) {
-      setErrorMsg('Tên đăng nhập hoặc mật khẩu không chính xác.');
+    const result = login(username, password);
+    if (!result.success) {
+      setErrorMsg(result.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
       return;
     }
     setErrorMsg('');

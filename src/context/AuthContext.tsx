@@ -4,9 +4,10 @@ import type { UserAccount } from '../types/auth';
 interface AuthContextType {
   currentUser: UserAccount | null;
   accounts: UserAccount[];
-  login: (username: string, password?: string) => boolean;
+  login: (username: string, password?: string) => { success: boolean; message?: string };
   logout: () => void;
-  createStudent: (username: string, password: string, fullName: string, schoolClass: string) => boolean;
+  createStudent: (username: string, password: string, fullName: string, schoolClass: string, allowedCourses?: string[]) => boolean;
+  updateStudentCourses: (studentId: string, allowedCourses: string[]) => void;
   deleteStudent: (id: string) => void;
   resetStudentProgress: (id: string) => void;
   updateCurrentUserProgress: (updater: (prev: UserAccount) => UserAccount) => void;
@@ -22,6 +23,7 @@ const defaultAccounts: UserAccount[] = [
     password: 'Nhat30655',
     fullName: 'Giáo Viên Quản Trị Hệ Thống',
     role: 'teacher',
+    allowedCourses: ['word', 'excel', 'powerpoint'],
     xpPoints: 999,
     streak: 30,
     progress: {},
@@ -34,6 +36,7 @@ const defaultAccounts: UserAccount[] = [
     fullName: 'Nguyễn Văn An',
     role: 'student',
     schoolClass: '12A1',
+    allowedCourses: ['word', 'excel'],
     xpPoints: 240,
     streak: 4,
     progress: {
@@ -50,6 +53,7 @@ const defaultAccounts: UserAccount[] = [
     fullName: 'Trần Thị Mai',
     role: 'student',
     schoolClass: '12A2',
+    allowedCourses: ['word'],
     xpPoints: 120,
     streak: 2,
     progress: {
@@ -68,16 +72,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Ensure admin account always has correct username 'admin' and password 'Nhat30655'
-        const hasAdmin = parsed.some((a: UserAccount) => a.username.toLowerCase() === 'admin');
-        if (hasAdmin) {
-          return parsed.map((a: UserAccount) =>
-            a.username.toLowerCase() === 'admin'
-              ? { ...a, username: 'admin', password: 'Nhat30655', role: 'teacher' }
-              : a
-          );
-        }
-        return [defaultAccounts[0], ...parsed];
+        return parsed.map((a: UserAccount) => {
+          const allowedCourses = a.allowedCourses && a.allowedCourses.length > 0
+            ? a.allowedCourses
+            : a.role === 'teacher'
+            ? ['word', 'excel', 'powerpoint']
+            : ['word'];
+          if (a.username.toLowerCase() === 'admin') {
+            return {
+              ...a,
+              username: 'admin',
+              password: 'Nhat30655',
+              role: 'teacher',
+              allowedCourses: ['word', 'excel', 'powerpoint']
+            };
+          }
+          return { ...a, allowedCourses };
+        });
       }
     } catch {
       // ignore
@@ -117,19 +128,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUser]);
 
-  const login = (username: string, password?: string): boolean => {
+  const login = (username: string, password?: string): { success: boolean; message?: string } => {
     const trimmedUser = username.trim().toLowerCase();
     const trimmedPass = password ? password.trim() : '';
 
-    const found = accounts.find(acc => acc.username.toLowerCase() === trimmedUser);
-    if (!found) return false;
-
-    if (found.password && found.password !== trimmedPass) {
-      return false;
+    const accountIndex = accounts.findIndex(acc => acc.username.toLowerCase() === trimmedUser);
+    if (accountIndex === -1) {
+      return { success: false, message: 'Tên đăng nhập không tồn tại trong hệ thống.' };
     }
 
-    setCurrentUser(found);
-    return true;
+    const account = accounts[accountIndex];
+
+    // Check account lockout
+    if (account.lockedUntil) {
+      const lockTime = new Date(account.lockedUntil).getTime();
+      if (Date.now() < lockTime) {
+        const remainingSeconds = Math.ceil((lockTime - Date.now()) / 1000);
+        return {
+          success: false,
+          message: `Tài khoản tạm thời bị khóa do nhập sai nhiều lần. Vui lòng thử lại sau ${remainingSeconds} giây.`
+        };
+      }
+    }
+
+    // Verify password
+    if (account.password && account.password !== trimmedPass) {
+      const attempts = (account.failedLoginAttempts || 0) + 1;
+      let lockUntil: string | null = null;
+      let lockMessage = 'Mật khẩu không chính xác.';
+
+      if (attempts >= 5) {
+        // Lock account for 60 seconds
+        lockUntil = new Date(Date.now() + 60 * 1000).toISOString();
+        lockMessage = 'Nhập sai mật khẩu 5 lần liên tiếp. Tài khoản bị tạm khóa 60 giây để bảo vệ an toàn.';
+      }
+
+      setAccounts(prev =>
+        prev.map((acc, idx) =>
+          idx === accountIndex
+            ? { ...acc, failedLoginAttempts: attempts, lockedUntil: lockUntil }
+            : acc
+        )
+      );
+
+      return { success: false, message: lockMessage };
+    }
+
+    // Reset failed login attempts on successful login
+    const updatedAccount: UserAccount = {
+      ...account,
+      failedLoginAttempts: 0,
+      lockedUntil: null
+    };
+
+    setAccounts(prev =>
+      prev.map((acc, idx) => (idx === accountIndex ? updatedAccount : acc))
+    );
+    setCurrentUser(updatedAccount);
+    return { success: true };
   };
 
   const logout = () => {
@@ -140,7 +196,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     username: string,
     password: string,
     fullName: string,
-    schoolClass: string
+    schoolClass: string,
+    allowedCourses: string[] = ['word']
   ): boolean => {
     const exists = accounts.some(
       a => a.username.toLowerCase() === username.trim().toLowerCase()
@@ -154,6 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fullName: fullName.trim(),
       role: 'student',
       schoolClass: schoolClass.trim(),
+      allowedCourses: allowedCourses.length > 0 ? allowedCourses : ['word'],
       xpPoints: 0,
       streak: 1,
       progress: {
@@ -168,6 +226,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+  const updateStudentCourses = (studentId: string, allowedCourses: string[]) => {
+    setAccounts(prev =>
+      prev.map(a => (a.id === studentId ? { ...a, allowedCourses } : a))
+    );
+    if (currentUser?.id === studentId) {
+      setCurrentUser(curr => (curr ? { ...curr, allowedCourses } : null));
+    }
+  };
   const deleteStudent = (id: string) => {
     setAccounts(prev => prev.filter(a => a.id !== id));
     if (currentUser?.id === id) {
@@ -224,6 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         accounts,
         login,
         logout,
+        updateStudentCourses,
         createStudent,
         deleteStudent,
         resetStudentProgress,

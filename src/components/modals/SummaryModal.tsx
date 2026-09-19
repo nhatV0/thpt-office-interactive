@@ -1,6 +1,6 @@
 import React from 'react';
-import confetti from 'canvas-confetti';
 import { Award, ArrowRight, RotateCcw } from 'lucide-react';
+import { triggerConfetti, playRewardChime } from '../../utils/celebration';
 
 interface SummaryModalProps {
   lessonTitle: string;
@@ -22,15 +22,8 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
   onClose
 }) => {
   React.useEffect(() => {
-    try {
-      confetti({
-        particleCount: 100,
-        spread: 80,
-        origin: { y: 0.5 }
-      });
-    } catch {
-      // ignore
-    }
+    triggerConfetti('grand');
+    playRewardChime('lesson-complete');
   }, []);
 
   return (

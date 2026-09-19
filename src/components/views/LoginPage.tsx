@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Lock, LogIn, User } from 'lucide-react';
-
+import { LogIn, User, Lock } from 'lucide-react';
+import { sanitizeText } from '../../utils/security';
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
 
@@ -11,16 +11,14 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
-
-    if (!username.trim() || !password.trim()) {
+    const sanitizedUser = sanitizeText(username);
+    if (!sanitizedUser || !password.trim()) {
       setErrorMsg('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
       return;
     }
-
-    const success = login(username, password);
-    if (!success) {
-      setErrorMsg('Tên đăng nhập hoặc mật khẩu không chính xác.');
+    const result = login(sanitizedUser, password);
+    if (!result.success) {
+      setErrorMsg(result.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
     }
   };
 

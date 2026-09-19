@@ -12,9 +12,9 @@ import {
   KeyRound,
   Check
 } from 'lucide-react';
-
+import { sanitizeText, isValidUsername } from '../../utils/security';
 export const TeacherDashboard: React.FC = () => {
-  const { accounts, createStudent, deleteStudent, resetStudentProgress } = useAuth();
+  const { accounts, createStudent, updateStudentCourses, deleteStudent, resetStudentProgress } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClass, setSelectedClass] = useState('all');
@@ -23,9 +23,9 @@ export const TeacherDashboard: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [newFullName, setNewFullName] = useState('');
   const [newClass, setNewClass] = useState('12A1');
+  const [newCourses, setNewCourses] = useState<string[]>(['word']);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-
   const students = accounts.filter(a => a.role === 'student');
 
   const classes = Array.from(new Set(students.map(s => s.schoolClass).filter(Boolean)));
@@ -38,13 +38,25 @@ export const TeacherDashboard: React.FC = () => {
     return matchesSearch && matchesClass;
   });
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUsername.trim() || !newFullName.trim() || !newPassword.trim()) {
+  const handleCreate = (_e: React.FormEvent) => {
+    _e.preventDefault();
+    const sanitizedUsername = sanitizeText(newUsername);
+    const sanitizedFullName = sanitizeText(newFullName);
+    const sanitizedClass = sanitizeText(newClass);
+
+    if (!sanitizedUsername || !sanitizedFullName || !newPassword.trim()) {
       setErrorMsg('Vui lòng điền đầy đủ tên đăng nhập, mật khẩu và họ tên học viên.');
       return;
     }
-    const success = createStudent(newUsername, newPassword, newFullName, newClass);
+    if (!isValidUsername(sanitizedUsername)) {
+      setErrorMsg('Tên đăng nhập không hợp lệ (từ 3-24 ký tự, chỉ gồm chữ, số và dấu gạch dưới).');
+      return;
+    }
+    if (newCourses.length === 0) {
+      setErrorMsg('Vui lòng chọn ít nhất một khóa học được cấp phép cho học sinh.');
+      return;
+    }
+    const success = createStudent(sanitizedUsername, newPassword, sanitizedFullName, sanitizedClass, newCourses);
     if (!success) {
       setErrorMsg('Tên đăng nhập này đã tồn tại trong hệ thống. Vui lòng chọn tên khác.');
       return;
@@ -53,12 +65,24 @@ export const TeacherDashboard: React.FC = () => {
     setNewUsername('');
     setNewPassword('');
     setNewFullName('');
+    setNewCourses(['word']);
     setErrorMsg('');
     setShowAddModal(false);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
-  const totalLessons = 18;
+  const handleToggleCourse = (studentId: string, currentCourses: string[], courseKey: string) => {
+    const updated = currentCourses.includes(courseKey)
+      ? currentCourses.filter(c => c !== courseKey)
+      : [...currentCourses, courseKey];
+    if (updated.length === 0) {
+      alert('Mỗi học viên cần được mở ít nhất một khóa học.');
+      return;
+    }
+    updateStudentCourses(studentId, updated);
+  };
+
+  const totalLessons = 24;
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
@@ -180,6 +204,7 @@ export const TeacherDashboard: React.FC = () => {
                 <th className="p-3.5 pl-5">Học Viên & Tài Khoản</th>
                 <th className="p-3.5">Mật Khẩu Cấp</th>
                 <th className="p-3.5">Lớp</th>
+                <th className="p-3.5">Khóa Học Được Phép</th>
                 <th className="p-3.5">Tiến Độ Bài Học</th>
                 <th className="p-3.5 text-center">Điểm XP</th>
                 <th className="p-3.5 text-right pr-5">Thao Tác</th>
@@ -233,6 +258,34 @@ export const TeacherDashboard: React.FC = () => {
                         <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-[11px]">
                           {student.schoolClass || 'Chưa xếp'}
                         </span>
+                      </td>
+
+                      {/* Allowed Courses badges with quick toggle */}
+                      <td className="p-3.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {[
+                            { id: 'word', label: 'Word', activeBg: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300 dark:border-sky-800' },
+                            { id: 'excel', label: 'Excel', activeBg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' },
+                            { id: 'powerpoint', label: 'PowerPoint', activeBg: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800' }
+                          ].map(c => {
+                            const isAllowed = (student.allowedCourses || ['word']).includes(c.id);
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => handleToggleCourse(student.id, student.allowedCourses || ['word'], c.id)}
+                                title={`Nhấp để ${isAllowed ? 'khóa' : 'mở'} khóa học ${c.label}`}
+                                className={`px-2 py-0.5 rounded-md border text-[10px] font-bold cursor-pointer transition-all ${
+                                  isAllowed
+                                    ? c.activeBg
+                                    : 'opacity-40 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 line-through'
+                                }`}
+                              >
+                                {c.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </td>
 
                       {/* Progress bar */}
@@ -383,6 +436,38 @@ export const TeacherDashboard: React.FC = () => {
                   onChange={e => setNewClass(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-sky-500 text-slate-900 dark:text-slate-100"
                 />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  Khóa Học Cho Phép Truy Cập
+                </label>
+                <div className="flex items-center gap-2">
+                  {[
+                    { id: 'word', label: 'Word 2019' },
+                    { id: 'excel', label: 'Excel 2019' },
+                    { id: 'powerpoint', label: 'PowerPoint 2019' }
+                  ].map(course => (
+                    <label
+                      key={course.id}
+                      className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-xl"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={newCourses.includes(course.id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setNewCourses(prev => [...prev, course.id]);
+                          } else {
+                            setNewCourses(prev => prev.filter(c => c !== course.id));
+                          }
+                        }}
+                        className="rounded text-sky-600 focus:ring-sky-500 cursor-pointer"
+                      />
+                      <span>{course.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2">

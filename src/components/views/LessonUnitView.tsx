@@ -2,6 +2,7 @@ import React from 'react';
 import { useLearning } from '../../context/LearningContext';
 import { CURRICULUM_DATA } from '../../data/curriculumData';
 import { BookOpen, Laptop, HelpCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { triggerConfetti, playRewardChime } from '../../utils/celebration';
 import { TheoryViewer } from '../theory/TheoryViewer';
 import { VirtualOfficeSimulator } from '../simulator/VirtualOfficeSimulator';
 import { QuizEngine } from '../quiz/QuizEngine';
@@ -38,11 +39,15 @@ export const LessonUnitView: React.FC<LessonUnitViewProps> = ({
   };
 
   const handleTheoryFinished = () => {
+    triggerConfetti('subtle');
+    playRewardChime('task');
     markTheoryCompleted(lesson.id);
     setCurrentTab('practice');
   };
 
   const handlePracticeFinished = () => {
+    triggerConfetti('burst');
+    playRewardChime('task');
     markPracticeCompleted(lesson.id);
     setCurrentTab('quiz');
   };

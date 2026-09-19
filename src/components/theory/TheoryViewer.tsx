@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { MicroTheoryCard } from '../../types/curriculum';
 import { CHECKPOINT_QUESTIONS_MAP } from '../../data/theoryCheckpointQuestions';
 import { BookOpen, Lightbulb, KeyRound, CheckCircle2, ChevronRight, ChevronLeft, HelpCircle, XCircle } from 'lucide-react';
-
+import { triggerConfetti, playRewardChime } from '../../utils/celebration';
 interface TheoryViewerProps {
   theories: MicroTheoryCard[];
   onCompleteTheory: () => void;
@@ -28,10 +28,11 @@ export const TheoryViewer: React.FC<TheoryViewerProps> = ({
     if (currentIndex + 1 < theories.length) {
       setCurrentIndex(idx => idx + 1);
     } else if (!isCompleted) {
+      triggerConfetti('burst');
+      playRewardChime('task');
       onCompleteTheory();
     }
   };
-
   const handlePrev = () => {
     if (currentIndex > 0) {
       setCurrentIndex(idx => idx - 1);
@@ -174,6 +175,10 @@ export const TheoryViewer: React.FC<TheoryViewerProps> = ({
                         onClick={() => {
                           setCheckpointAnswers(prev => ({ ...prev, [currentTheory.id]: oIdx }));
                           setShowExplanations(prev => ({ ...prev, [currentTheory.id]: true }));
+                          if (currentTheory.checkpointQuestion!.correctIndex === oIdx) {
+                            triggerConfetti('subtle');
+                            playRewardChime('checkpoint');
+                          }
                         }}
                         className={`w-full text-left p-2.5 rounded-xl border text-xs flex items-center justify-between transition-all cursor-pointer ${btnClass}`}
                       >
