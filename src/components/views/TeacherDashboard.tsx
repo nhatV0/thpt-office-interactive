@@ -280,7 +280,13 @@ export const TeacherDashboard: React.FC = () => {
                                 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800'
                                 : c.id === 'cp-silver'
                                 ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300 border-cyan-300 dark:border-cyan-800'
-                                : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800';
+                                : c.id === 'robotics-basic'
+                                ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300 border-orange-300 dark:border-orange-800'
+                                : c.id === 'robotics-intermediate'
+                                ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
+                                : c.id === 'robotics-advanced'
+                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                                : 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-300 dark:border-purple-800';
                             return (
                               <button
                                 key={c.id}
@@ -293,7 +299,7 @@ export const TeacherDashboard: React.FC = () => {
                                     : 'opacity-40 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 line-through'
                                 }`}
                               >
-                                {c.id === 'word' ? 'Word' : c.id === 'excel' ? 'Excel' : c.id === 'powerpoint' ? 'PowerPoint' : c.id === 'cp-basic' ? 'Cơ Bản' : c.id === 'cp-bronze' ? 'Nâng Cao' : c.id === 'cp-silver' ? 'Chuyên Sâu' : 'Đề MOS Word'}
+                                {c.id === 'word' ? 'Word' : c.id === 'excel' ? 'Excel' : c.id === 'powerpoint' ? 'PowerPoint' : c.id === 'cp-basic' ? 'CP Cơ Bản' : c.id === 'cp-bronze' ? 'CP Nâng Cao' : c.id === 'cp-silver' ? 'CP Chuyên Sâu' : c.id === 'robotics-basic' ? 'Robot 1' : c.id === 'robotics-intermediate' ? 'Robot 2' : c.id === 'robotics-advanced' ? 'Robot 3' : 'Đề MOS Word'}
                               </button>
                             );
                           })}

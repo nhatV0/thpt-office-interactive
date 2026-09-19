@@ -32,10 +32,10 @@ export const LoginPage: React.FC = () => {
             MOS
           </div>
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-            Tin Học Văn Phòng Tương Tác
+            Hệ Thống Học Tập Tin Học
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Hệ thống học và ôn luyện chuẩn Tin học THPT & Chứng chỉ MOS
+            Học lý thuyết tương tác, thực hành giả lập trực tiếp trên web & luyện thi
           </p>
         </div>
 
@@ -101,8 +101,18 @@ export const LoginPage: React.FC = () => {
           </form>
 
           {/* Footer note */}
-          <div className="pt-2 text-center text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800">
-            <span>Học sinh chưa có tài khoản vui lòng liên hệ giáo viên để được cấp.</span>
+          <div className="pt-3 text-center space-y-2 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
+            <p className="font-medium text-slate-700 dark:text-slate-300">
+              Học sinh chưa có tài khoản vui lòng liên hệ zalo: <span className="font-bold text-sky-600 dark:text-sky-400">0944540402</span> (thầy Nhật)
+            </p>
+            <div className="text-[11px] text-slate-400 dark:text-slate-500 pt-1 space-y-0.5">
+              <p className="font-medium text-slate-600 dark:text-slate-400">
+                Giáo viên: Võ Minh Nhật - Giáo viên Tin học
+              </p>
+              <p>
+                Email: <a href="mailto:vominhnhat080402@gmail.com" className="text-sky-600 dark:text-sky-400 hover:underline">vominhnhat080402@gmail.com</a> • Zalo: <span className="text-slate-600 dark:text-slate-300 font-medium">0944540402</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>

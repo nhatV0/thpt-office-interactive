@@ -109,6 +109,51 @@ export const COURSES_REGISTRY: CourseDefinition[] = [
     unitLabel: 'chủ đề',
     durationHours: 60,
     tags: ['Monotonic Queue', '2D Prefix Sum', 'String Hashing', 'Dijkstra', 'Tree DFS', 'DP Nâng Cao']
+  },
+  {
+    id: 'robotics-basic',
+    title: 'Robotics Cơ Bản: VEX IQ Foundation',
+    subtitle: 'Khám phá bộ kit VEX IQ, cơ cấu truyền động & lập trình di chuyển',
+    description: 'Trang bị kiến thức nền tảng về bộ kit VEX IQ thế hệ 2, cơ cấu truyền động bánh răng M.A.D Box, lập trình di chuyển Drivetrain và tích hợp các cảm biến Bumper Switch, Distance Sensor, Optical Sensor và Touch LED.',
+    kind: 'robotics',
+    category: 'robotics',
+    badgeName: 'Robotics Khóa 1',
+    accentColor: 'orange',
+    accentClass: 'from-amber-500 to-orange-600',
+    totalUnits: 8,
+    unitLabel: 'bài học',
+    durationHours: 32,
+    tags: ['VEX IQ 2nd Gen', 'VEXcode IQ', 'Bánh răng', 'Bumper Switch', 'Distance Sensor', 'Optical Sensor', 'Touch LED']
+  },
+  {
+    id: 'robotics-intermediate',
+    title: 'Robotics Nâng Cao: Vận Hành Tự Động',
+    subtitle: 'Rẽ nhánh logic, an toàn robot & xe dò đường tự hành',
+    description: 'Nâng cấp tư duy lập trình tự hành với cấu trúc rẽ nhánh điều kiện logic If-Else, thuật toán chống rơi bàn (Cliff Detection) và thực hành chuyên sâu chế tạo xe dò đường Line Tracker vượt sa bàn phức tạp.',
+    kind: 'robotics',
+    category: 'robotics',
+    badgeName: 'Robotics Khóa 2',
+    accentColor: 'indigo',
+    accentClass: 'from-indigo-500 to-violet-600',
+    totalUnits: 4,
+    unitLabel: 'bài học',
+    durationHours: 24,
+    tags: ['If-Else Logic', 'Forever Loop', 'Chống rơi bàn', 'Line Tracker', 'Đa cảm biến', 'Tự hành']
+  },
+  {
+    id: 'robotics-advanced',
+    title: 'Robotics Chuyên Sâu: Cơ Điện Tử & AI',
+    subtitle: 'Con quay Gyro, Servo Motor, Controller không dây & Thuật toán mê cung',
+    description: 'Chinh phục kỹ thuật Robotics thi đấu đỉnh cao: Định vị góc quay tuyệt đối bằng Con quay hồi chuyển Gyro Sensor, điều khiển Servo Motor và cánh tay ClawBot gắp hàng, tay cầm Controller từ xa và thuật toán giải mê cung Wall Following.',
+    kind: 'robotics',
+    category: 'robotics',
+    badgeName: 'Robotics Khóa 3',
+    accentColor: 'rose',
+    accentClass: 'from-rose-500 to-pink-600',
+    totalUnits: 6,
+    unitLabel: 'bài học',
+    durationHours: 36,
+    tags: ['Gyro Sensor', 'Inertial Heading', 'Servo ClawBot', 'VEX Controller', 'Thuật toán mê cung', 'Đồ án VEX IQ']
   }
 ];
 

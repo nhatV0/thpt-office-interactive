@@ -13,6 +13,8 @@ import type { CourseDefinition } from './types/course';
 import { SummaryModal } from './components/modals/SummaryModal';
 import { LoginPage } from './components/views/LoginPage';
 import { CompetitiveProgrammingView } from './components/views/CompetitiveProgrammingView';
+import { RoboticsLearningView } from './components/views/RoboticsLearningView';
+import type { RoboticsCourseId } from './types/roboticsCourse';
 const AppContent: React.FC = () => {
   const {
     activeCourseId,
@@ -26,7 +28,7 @@ const AppContent: React.FC = () => {
   } = useLearning();
 
   const { currentUser } = useAuth();
-  const [viewMode, setViewMode] = useState<'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming'>('courses');
+  const [viewMode, setViewMode] = useState<'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics'>('courses');
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
       const savedTheme = localStorage.getItem('thpt_office_theme');
@@ -64,6 +66,8 @@ const AppContent: React.FC = () => {
     setActiveCourseId(course.id);
     if (course.kind === 'programming') {
       setViewMode('programming');
+    } else if (course.kind === 'robotics') {
+      setViewMode('robotics');
     } else if (course.kind === 'practice') {
       setViewMode('practice');
     } else if (course.moduleId) {
@@ -132,6 +136,11 @@ const AppContent: React.FC = () => {
         ) : viewMode === 'programming' ? (
           <CompetitiveProgrammingView
             courseId={(activeCourseId === 'cp-silver' || activeCourseId === 'cp-bronze' || activeCourseId === 'cp-basic') ? activeCourseId : 'cp-basic'}
+            onBackToCourses={() => setViewMode('courses')}
+          />
+        ) : viewMode === 'robotics' ? (
+          <RoboticsLearningView
+            courseId={(activeCourseId === 'robotics-basic' || activeCourseId === 'robotics-intermediate' || activeCourseId === 'robotics-advanced') ? (activeCourseId as RoboticsCourseId) : 'robotics-basic'}
             onBackToCourses={() => setViewMode('courses')}
           />
         ) : viewMode === 'practice' ? (

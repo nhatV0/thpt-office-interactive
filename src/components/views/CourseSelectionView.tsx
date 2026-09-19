@@ -20,7 +20,9 @@ import {
   ShieldCheck,
   Search,
   Code2,
-  Terminal
+  Terminal,
+  Bot,
+  Cpu
 } from 'lucide-react';
 
 interface CourseSelectionViewProps {
@@ -42,7 +44,7 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
     ? currentUser.allowedCourses
     : ['word'];
 
-  const [activeFilter, setActiveFilter] = useState<'all' | 'my-courses' | 'office' | 'practice' | 'programming'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'my-courses' | 'office' | 'practice' | 'programming' | 'robotics'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const isCourseUnlocked = (courseId: string) => allowedCourses.includes(courseId);
@@ -63,10 +65,16 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
         return <Terminal className="w-6 h-6 text-white" />;
       case 'cp-silver':
         return <Sparkles className="w-6 h-6 text-white" />;
+      case 'robotics-basic':
+        return <Bot className="w-6 h-6 text-white" />;
+      case 'robotics-intermediate':
+        return <Cpu className="w-6 h-6 text-white" />;
+      case 'robotics-advanced':
+        return <Sparkles className="w-6 h-6 text-white" />;
+      default:
         return <BookOpen className="w-6 h-6 text-white" />;
     }
   };
-
   const filteredCourses = COURSES_REGISTRY.filter(course => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -87,6 +95,9 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
     if (activeFilter === 'programming') {
       return course.category === 'programming';
     }
+    if (activeFilter === 'robotics') {
+      return course.category === 'robotics';
+    }
     return true;
   });
 
@@ -100,7 +111,7 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-sky-300 text-xs font-semibold backdrop-blur-xs">
               <GraduationCap className="w-3.5 h-3.5 text-sky-400" />
-              <span>Hệ Thống Đào Tạo & Luyện Thi MOS Chuẩn Quốc Tế</span>
+              <span>Hệ Thống Học Tập Tin Học</span>
             </span>
             {isTeacher ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold">
@@ -197,7 +208,18 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            Lập Trình Thi Đấu (2)
+            Lập Trình Thi Đấu (3)
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFilter('robotics')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              activeFilter === 'robotics'
+                ? 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Robotics VEX IQ (3)
           </button>
         </div>
 

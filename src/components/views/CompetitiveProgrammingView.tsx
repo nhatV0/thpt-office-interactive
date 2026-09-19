@@ -1,17 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Code2,
   BookOpen,
   Download,
   CheckCircle2,
   XCircle,
-  Clock,
-  HardDrive,
   Search,
-  Filter,
   Flame,
   ArrowLeft,
   ChevronRight,
+  ChevronLeft,
   Terminal,
   Award,
   Sparkles,
@@ -22,12 +20,13 @@ import {
   Copy,
   Check,
   ExternalLink,
-  Maximize2
+  RotateCcw
 } from 'lucide-react';
 import { getCPCourseData } from '../../data/cpCoursesData';
 import type { CPLesson, CPProblem } from '../../types/cpCourse';
 import { useLearning } from '../../context/LearningContext';
 import { MathRenderer } from '../common/MathRenderer';
+import { triggerConfetti, playRewardChime } from '../../utils/celebration';
 
 interface CompetitiveProgrammingViewProps {
   courseId: 'cp-basic' | 'cp-bronze' | 'cp-silver';
@@ -42,12 +41,17 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
   const { addXP } = useLearning();
 
   const [selectedLessonIndex, setSelectedLessonIndex] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<'theory' | 'problems' | 'testcases'>('theory');
+  // 3-step navigation inspired by Word/Excel/PowerPoint: theory -> practice -> summary
+  const [currentTab, setCurrentTab] = useState<'theory' | 'practice' | 'summary'>('theory');
+
+  // Search & filter in Practice Workbench
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
-  const [selectedProblem, setSelectedProblem] = useState<CPProblem | null>(null);
 
-  // Active test case index inside modal
+  // Selected problem inside Practice Workbench
+  const [selectedProblemId, setSelectedProblemId] = useState<string>('');
+
+  // Per-test runner state
   const [activeTestIndex, setActiveTestIndex] = useState<number>(0);
   const [userInputOutput, setUserInputOutput] = useState<string>('');
   const [testResult, setTestResult] = useState<'idle' | 'passed' | 'failed'>('idle');
@@ -93,6 +97,46 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
 
   const currentLesson: CPLesson = courseData.lessons[selectedLessonIndex] || courseData.lessons[0];
 
+  // Filter problems for current lesson
+  const filteredProblems = useMemo(() => {
+    return currentLesson.problems.filter(p => {
+      const matchSearch =
+        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.source.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchSource =
+        sourceFilter === 'all' ||
+        (sourceFilter === 'Thuật toán' && p.source === 'Thuật toán') ||
+        (sourceFilter === 'HSG' && p.source === 'HSG') ||
+        (sourceFilter === 'Olympic' && p.source === 'Olympic') ||
+        (sourceFilter === 'Chuyên Tin' && p.source === 'Chuyên Tin');
+      return matchSearch && matchSource;
+    });
+  }, [currentLesson, searchQuery, sourceFilter]);
+
+  // Set default selected problem when lesson or filter changes
+  useEffect(() => {
+    if (filteredProblems.length > 0) {
+      const exists = filteredProblems.some(p => p.id === selectedProblemId);
+      if (!exists) {
+        setSelectedProblemId(filteredProblems[0].id);
+      }
+    } else {
+      setSelectedProblemId('');
+    }
+    setActiveTestIndex(0);
+    setUserInputOutput('');
+    setTestResult('idle');
+  }, [currentLesson.id, filteredProblems, selectedProblemId]);
+
+  const activeProblem: CPProblem | undefined = useMemo(() => {
+    return currentLesson.problems.find(p => p.id === selectedProblemId) || filteredProblems[0];
+  }, [currentLesson.problems, selectedProblemId, filteredProblems]);
+
+  const activeProblemIndex = useMemo(() => {
+    if (!activeProblem) return -1;
+    return filteredProblems.findIndex(p => p.id === activeProblem.id);
+  }, [filteredProblems, activeProblem]);
+
   const handleToggleTheoryDone = (lessonId: string) => {
     setCompletedTheories(prev => {
       const updated = { ...prev, [lessonId]: !prev[lessonId] };
@@ -103,6 +147,8 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
       }
       if (!prev[lessonId]) {
         addXP(25);
+        triggerConfetti('subtle');
+        playRewardChime('task');
       }
       return updated;
     });
@@ -119,27 +165,15 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
       }
       if (!prev[problemId]) {
         addXP(15);
+        triggerConfetti('burst');
+        playRewardChime('task');
       }
       return updated;
     });
   };
 
-  // Filter problems for current lesson
-  const filteredProblems = useMemo(() => {
-    return currentLesson.problems.filter(p => {
-      const matchSearch =
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.source.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchSource =
-        sourceFilter === 'all' ||
-        (sourceFilter === 'Thuật toán' && p.source === 'Thuật toán') ||
-        (sourceFilter === 'HSG' && (p.source === 'HSG' || p.source === 'Olympic' || p.source === 'Chuyên Tin'));
-      return matchSearch && matchSource;
-    });
-  }, [currentLesson, searchQuery, sourceFilter]);
-
   const totalProblemsCount = useMemo(() => {
-    return courseData.lessons.reduce((acc, l) => acc + l.problems.length, 0);
+    return courseData.lessons.reduce((acc: number, l: CPLesson) => acc + l.problems.length, 0);
   }, [courseData]);
 
   const solvedProblemsCount = useMemo(() => {
@@ -164,12 +198,6 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
     ? 'border-amber-500/30 dark:border-amber-500/30'
     : 'border-cyan-500/30 dark:border-cyan-500/30';
 
-  const themeGlow = isBasic
-    ? 'from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent'
-    : isBronze
-    ? 'from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent'
-    : 'from-cyan-500/10 via-cyan-500/5 to-transparent dark:from-cyan-500/10 dark:via-cyan-500/5 dark:to-transparent';
-
   const themeBadge = isBasic
     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
     : isBronze
@@ -182,11 +210,6 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
     ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold'
     : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold';
 
-  const themeText = isBasic
-    ? 'text-emerald-600 dark:text-emerald-400'
-    : isBronze
-    ? 'text-amber-600 dark:text-amber-400'
-    : 'text-cyan-600 dark:text-cyan-400';
   // Copy helpers
   const handleCopyInput = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -202,38 +225,53 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
 
   // Compare user output with expected test output
   const handleVerifyOutput = () => {
-    if (!selectedProblem) return;
-    const currentTest = selectedProblem.testCases && selectedProblem.testCases[activeTestIndex]
-      ? selectedProblem.testCases[activeTestIndex]
-      : { output: selectedProblem.sampleOutput || '' };
+    if (!activeProblem) return;
+    const currentTest = activeProblem.testCases && activeProblem.testCases[activeTestIndex]
+      ? activeProblem.testCases[activeTestIndex]
+      : { output: activeProblem.sampleOutput || '' };
 
     const cleanExpected = (currentTest.output || '').trim().replace(/\r\n/g, '\n');
     const cleanUser = userInputOutput.trim().replace(/\r\n/g, '\n');
 
     if (cleanUser === cleanExpected) {
       setTestResult('passed');
-      if (!completedProblems[selectedProblem.id]) {
-        handleToggleProblemDone(selectedProblem.id);
+      triggerConfetti('burst');
+      playRewardChime('task');
+      if (!completedProblems[activeProblem.id]) {
+        handleToggleProblemDone(activeProblem.id);
       }
     } else {
       setTestResult('failed');
     }
   };
 
+  // Switch to previous or next problem
+  const handleSelectProblemByOffset = (offset: number) => {
+    if (activeProblemIndex === -1) return;
+    const targetIdx = activeProblemIndex + offset;
+    if (targetIdx >= 0 && targetIdx < filteredProblems.length) {
+      setSelectedProblemId(filteredProblems[targetIdx].id);
+      setActiveTestIndex(0);
+      setUserInputOutput('');
+      setTestResult('idle');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-white transition-colors duration-200">
       {/* Top Header Navigation */}
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={onBackToCourses}
             className="flex items-center gap-1.5 text-xs lg:text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-2.5 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-800 cursor-pointer"
+            title="Đổi khóa học"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Đổi khóa học</span>
           </button>
 
-          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
           <div className="flex items-center gap-2">
             <div className={`p-1.5 rounded-md border ${themeBadge}`}>
@@ -251,26 +289,66 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
           </div>
         </div>
 
-        {/* Global Progress Counters */}
-        <div className="flex items-center gap-4 text-xs font-mono">
-          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-md">
-            <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-slate-400">Lý thuyết:</span>
-            <span className={`font-semibold ${themeText}`}>
-              {finishedTheoriesCount}/{courseData.lessons.length}
-            </span>
-          </div>
+        {/* 3 Steps Navigation: Theory -> Practice -> Summary (Word/Excel Model) */}
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setCurrentTab('theory')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              currentTab === 'theory'
+                ? 'bg-white dark:bg-slate-900 text-cyan-700 dark:text-cyan-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>1. Lý thuyết</span>
+            {completedTheories[currentLesson.id] && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            )}
+          </button>
 
+          <button
+            type="button"
+            onClick={() => setCurrentTab('practice')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              currentTab === 'practice'
+                ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            <Code2 className="w-3.5 h-3.5" />
+            <span>2. Thực hành thuật toán</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-800">
+              {currentLesson.problems.filter(p => completedProblems[p.id]).length}/{currentLesson.problems.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCurrentTab('summary')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              currentTab === 'summary'
+                ? 'bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            <Award className="w-3.5 h-3.5" />
+            <span>3. Tổng kết chuyên đề</span>
+          </button>
+        </div>
+
+        {/* Global Progress Counters */}
+        <div className="flex items-center gap-3 text-xs font-mono">
           <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-md">
-            <Code2 className="w-3.5 h-3.5 text-emerald-400" />
+            <Code2 className="w-3.5 h-3.5 text-emerald-500" />
             <span className="text-slate-400">Đã giải:</span>
-            <span className="font-semibold text-emerald-400">
+            <span className="font-semibold text-emerald-500">
               {solvedProblemsCount}/{totalProblemsCount}
             </span>
           </div>
 
-          <div className="hidden lg:flex items-center gap-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-md">
-            <Flame className="w-3.5 h-3.5 text-orange-400" />
+          <div className="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-md">
+            <Flame className="w-3.5 h-3.5 text-orange-500" />
             <span className="text-slate-400">Tiến độ:</span>
             <span className="font-semibold text-slate-900 dark:text-white">{progressPercent}%</span>
           </div>
@@ -280,12 +358,12 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
       {/* Main Container */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Sidebar: Lessons Navigation */}
-        <aside className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 flex flex-col shrink-0 max-h-[35vh] lg:max-h-[calc(100vh-61px)] overflow-y-auto">
-          <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 sticky top-0 z-10">
+        <aside className="w-full lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 flex flex-col shrink-0 max-h-[30vh] lg:max-h-[calc(100vh-61px)] overflow-y-auto">
+          <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 sticky top-0 z-10">
             <div className="flex items-center justify-between text-xs font-mono text-slate-400 mb-1">
               <span className="flex items-center gap-1.5 uppercase font-semibold tracking-wider">
                 <Layers className="w-3.5 h-3.5" />
-                Chuyên Đề Bài Học ({courseData.lessons.length})
+                Chuyên Đề ({courseData.lessons.length})
               </span>
               <span>{Math.round((finishedTheoriesCount / courseData.lessons.length) * 100)}%</span>
             </div>
@@ -298,26 +376,24 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
           </div>
 
           <div className="divide-y divide-slate-100 dark:divide-slate-800/60 p-1.5 space-y-1">
-            {courseData.lessons.map((lesson, idx) => {
+            {courseData.lessons.map((lesson: CPLesson, idx: number) => {
               const isSelected = idx === selectedLessonIndex;
               const isTheoryDone = completedTheories[lesson.id];
-              const lessonSolvedCount = lesson.problems.filter(p => completedProblems[p.id]).length;
-
+              const lessonSolvedCount = lesson.problems.filter((p: CPProblem) => completedProblems[p.id]).length;
               return (
                 <button
                   key={lesson.id}
                   onClick={() => {
                     setSelectedLessonIndex(idx);
-                    setSelectedProblem(null);
                   }}
-                  className={`w-full text-left p-3 rounded-lg transition-all duration-150 relative group flex items-start gap-3 cursor-pointer ${
+                  className={`w-full text-left p-2.5 rounded-lg transition-all duration-150 relative group flex items-start gap-2.5 cursor-pointer ${
                     isSelected
-                      ? `bg-slate-800/90 border ${themeBorder} shadow-sm shadow-black/40`
-                      : 'hover:bg-slate-800/40 border border-transparent text-slate-400'
+                      ? `bg-slate-100 dark:bg-slate-800/90 border ${themeBorder} shadow-xs`
+                      : 'hover:bg-slate-100/60 dark:hover:bg-slate-800/40 border border-transparent text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   <div
-                    className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-mono shrink-0 transition-colors ${
+                    className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-mono shrink-0 transition-colors ${
                       isSelected
                         ? isBasic
                           ? 'bg-emerald-500 text-slate-950 font-bold'
@@ -326,34 +402,23 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                           : 'bg-cyan-500 text-slate-950 font-bold'
                         : isTheoryDone
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200'
                     }`}
                   >
-                    {isTheoryDone ? <CheckCircle2 className="w-4 h-4" /> : lesson.order}
+                    {isTheoryDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : lesson.order}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <span
-                        className={`text-xs font-medium leading-tight line-clamp-1 ${
-                          isSelected ? 'text-white font-semibold' : 'group-hover:text-slate-200'
-                        }`}
-                      >
-                        Bài {lesson.order}: {lesson.title}
+                      <span className="text-[10px] font-mono text-slate-400">Bài {lesson.order}</span>
+                      <span className="text-[10px] font-mono text-slate-500">
+                        {lessonSolvedCount}/{lesson.problems.length}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
-                      <span>{lesson.problems.length} bài tập</span>
-                      <span>-</span>
-                      <span className={lessonSolvedCount > 0 ? 'text-emerald-400' : ''}>
-                        {lessonSolvedCount}/{lesson.problems.length} xong
-                      </span>
-                    </div>
+                    <p className={`text-xs font-semibold line-clamp-1 ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                      {lesson.title}
+                    </p>
                   </div>
-
-                  {isSelected && (
-                    <ChevronRight className={`w-4 h-4 shrink-0 self-center ${themeText}`} />
-                  )}
                 </button>
               );
             })}
@@ -362,720 +427,611 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
 
         {/* Right Main Workspace */}
         <main className="flex-1 flex flex-col overflow-y-auto bg-slate-50/50 dark:bg-slate-950 max-h-[calc(100vh-61px)]">
-          {/* Lesson Header Banner */}
-          <div className={`p-5 lg:p-7 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r ${themeGlow}`}>
-            <div className="max-w-5xl mx-auto">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+          {/* TAB 1: THEORY ONLINE VIEWER */}
+          {currentTab === 'theory' && (
+            <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto w-full">
+              {/* Theory Header Card */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3.5 rounded-xl border shrink-0 ${themeBadge}`}>
+                      <FileText className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-cyan-300 border border-slate-200 dark:border-slate-700 font-semibold">
+                          {courseData.levelBadge} • Bài {currentLesson.order}
+                        </span>
+                        <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium">
+                          Giáo Trình Đã Chuẩn Hóa
+                        </span>
+                      </div>
+                      <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-1">
+                        {currentLesson.title}
+                      </h2>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                        {currentLesson.theorySummary}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {currentLesson.theoryPdfUrl && (
+                      <>
+                        <a
+                          href={currentLesson.theoryPdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 transition-colors shadow-xs"
+                          title="Mở tab mới"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
+                          <span>Mở Tab Mới</span>
+                        </a>
+
+                        <a
+                          href={currentLesson.theoryPdfUrl}
+                          download={currentLesson.theoryPdfFileName || `${currentLesson.title}.pdf`}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 transition-colors shadow-xs"
+                          title="Tải file PDF"
+                        >
+                          <Download className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                          <span>Tải PDF</span>
+                        </a>
+                      </>
+                    )}
+
+                    <button
+                      onClick={() => handleToggleTheoryDone(currentLesson.id)}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                        completedTheories[currentLesson.id]
+                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>{completedTheories[currentLesson.id] ? 'Đã hoàn thành lý thuyết' : 'Hoàn thành lý thuyết (+25 XP)'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Core Concepts */}
+                <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Khái niệm trọng tâm:
+                  </span>
+                  {currentLesson.coreConcepts.map((concept, cIdx) => (
+                    <span
+                      key={cIdx}
+                      className="text-xs font-mono bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-md"
+                    >
+                      {concept}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* PDF Viewer Embed */}
+              {currentLesson.theoryPdfUrl && (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+                  <div className="p-3 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-cyan-500" />
+                      Tài liệu bài giảng PDF gốc
+                    </span>
+                    <span className="text-slate-500 font-mono">{currentLesson.theoryPdfFileName}</span>
+                  </div>
+                  <iframe
+                    src={`${currentLesson.theoryPdfUrl}#toolbar=0&navpanes=0&scrollbar=1`}
+                    title={`Lý thuyết - ${currentLesson.title}`}
+                    className="w-full h-[650px] border-0"
+                  />
+                </div>
+              )}
+
+              {/* Theory Content Markdown */}
+              {currentLesson.theoryContent && (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-cyan-500" />
+                    Văn Bản Lý Thuyết Chi Tiết
+                  </h3>
+                  <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-sans">
+                    <MathRenderer content={currentLesson.theoryContent} />
+                  </div>
+                </div>
+              )}
+
+              {/* Next Step Button */}
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleToggleTheoryDone(currentLesson.id);
+                    setCurrentTab('practice');
+                  }}
+                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${themeBtn}`}
+                >
+                  <span>Chuyển sang Bước 2: Thực hành thuật toán</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: INTERACTIVE PRACTICE WORKBENCH (ZERO-POPUP TWO-COLUMN WORKSPACE) */}
+          {currentTab === 'practice' && (
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+              {/* Practice Sub-Header Bar */}
+              <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs font-mono uppercase px-2 py-0.5 rounded border ${themeBadge}`}>
-                    Chuyên đề {currentLesson.order}
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Bài {currentLesson.order}: {currentLesson.title}
                   </span>
                   <span className="text-xs text-slate-400 font-mono">
-                    {currentLesson.problems.length} bài tập thuật toán
+                    ({filteredProblems.length} bài tập phù hợp)
                   </span>
                 </div>
 
-                <button
-                  onClick={() => handleToggleTheoryDone(currentLesson.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                    completedTheories[currentLesson.id]
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                  }`}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>
-                    {completedTheories[currentLesson.id] ? 'Đã hoàn thành lý thuyết' : 'Đánh dấu xong lý thuyết'}
-                  </span>
-                </button>
-              </div>
-
-              <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
-                Bài {currentLesson.order}: {currentLesson.title}
-              </h1>
-
-              <p className="text-xs lg:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl">
-                {currentLesson.theorySummary}
-              </p>
-
-              {/* Core Concepts Badges */}
-              <div className="flex flex-wrap items-center gap-2 mt-4">
-                <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-400" /> Trọng tâm:
-                </span>
-                {currentLesson.coreConcepts.map((concept, cIdx) => (
-                  <span
-                    key={cIdx}
-                    className="text-xs font-mono bg-slate-900 border border-slate-800 text-slate-300 px-2.5 py-1 rounded-md"
-                  >
-                    {concept}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation Tabs */}
-          <div className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 sticky top-0 z-20 px-5 lg:px-8">
-            <div className="max-w-5xl mx-auto flex items-center gap-1">
-              <button
-                onClick={() => setActiveTab('theory')}
-                className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
-                  activeTab === 'theory'
-                    ? `${isBasic ? 'border-emerald-500 text-emerald-400' : isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>Giáo Trình Trực Tuyến</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('problems')}
-                className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
-                  activeTab === 'problems'
-                    ? `${isBasic ? 'border-emerald-500 text-emerald-400' : isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Code2 className="w-4 h-4" />
-                <span>Đề Bài Thuật Toán ({currentLesson.problems.length})</span>
-              </button>
-
-              {currentLesson.problems.some(p => p.hasTestCases) && (
-                <button
-                  onClick={() => setActiveTab('testcases')}
-                  className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
-                    activeTab === 'testcases'
-                      ? `${isBasic ? 'border-emerald-500 text-emerald-400' : isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
-                      : 'border-transparent text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Test Cases Chấm Bài</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Tab Content Body */}
-          <div className="p-5 lg:p-8 flex-1">
-            <div className="max-w-5xl mx-auto">
-              {/* TAB 1: THEORY ONLINE PDF VIEWER */}
-              {activeTab === 'theory' && (
-                <div className="space-y-6">
-                  {/* Professional PDF Reader Header Toolbar */}
-                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-lg">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      <div className="flex items-start gap-4">
-                        <div className={`p-3.5 rounded-xl border shrink-0 ${themeBadge}`}>
-                          <FileText className="w-7 h-7" />
-                        </div>
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-cyan-300 border border-slate-200 dark:border-slate-700 font-semibold">
-                              {courseData.levelBadge} • Bài {currentLesson.order}
-                            </span>
-                            <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium">
-                              Định dạng PDF Gốc Chuẩn
-                            </span>
-                          </div>
-                          <h3 className="text-base sm:text-xl font-bold text-slate-900 dark:text-white mb-1">
-                            {currentLesson.title}
-                          </h3>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
-                            {currentLesson.theorySummary || 'Tài liệu bài giảng trực quan đầy đủ cấu trúc giải thuật, hình ảnh minh họa, bảng so sánh và mã nguồn chuẩn.'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons Toolbar */}
-                      <div className="flex flex-wrap items-center gap-2.5 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
-                        {currentLesson.theoryPdfUrl && (
-                          <>
-                            <a
-                              href={currentLesson.theoryPdfUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 transition-colors shadow-xs"
-                              title="Mở PDF trong tab mới để xem toàn màn hình"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
-                              <span>Mở Tab Mới</span>
-                            </a>
-
-                            <a
-                              href={currentLesson.theoryPdfUrl}
-                              download={currentLesson.theoryPdfFileName || `${currentLesson.title}.pdf`}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 transition-colors shadow-xs"
-                              title="Tải file PDF bài giảng về máy tính"
-                            >
-                              <Download className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-                              <span>Tải PDF</span>
-                            </a>
-                          </>
-                        )}
-
-                        <button
-                          onClick={() => {
-                            addXP(50);
-                            alert(`Đã hoàn thành lý thuyết bài "${currentLesson.title}"! (+50 XP)`);
-                          }}
-                          className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg text-white transition-all shadow-sm cursor-pointer ${
-                            isBasic
-                              ? 'bg-emerald-600 hover:bg-emerald-500'
-                              : isBronze
-                              ? 'bg-amber-600 hover:bg-amber-500'
-                              : 'bg-cyan-600 hover:bg-cyan-500'
-                          }`}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Đã Học Xong (+50 XP)</span>
-                        </button>
-                      </div>
-                    </div>
+                {/* Filters */}
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Tìm bài tập..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="pl-8 pr-3 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-white focus:outline-hidden focus:border-cyan-500 w-44"
+                    />
                   </div>
 
-                  {/* Embedded PDF Viewer Container */}
-                  {currentLesson.theoryPdfUrl ? (
-                    <div className="bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-md">
-                      {/* Viewer Top Sub-bar */}
-                      <div className="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400 font-mono">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                          <span className="truncate max-w-xs sm:max-w-md text-slate-300 font-medium">
-                            {currentLesson.theoryPdfFileName || 'Tài liệu bài giảng PDF'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 text-[11px] text-slate-500">
-                          <span className="hidden sm:inline">Phím tắt trình đọc: Ctrl + Cuộn chuột để phóng to/thu nhỏ</span>
-                          <a
-                            href={currentLesson.theoryPdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-cyan-400 flex items-center gap-1 text-slate-400 transition-colors"
-                          >
-                            <Maximize2 className="w-3 h-3" />
-                            <span className="hidden sm:inline">Toàn màn hình</span>
-                          </a>
-                        </div>
-                      </div>
-
-                      {/* Native Embedded PDF iFrame */}
-                      <div className="relative w-full bg-slate-950 flex flex-col items-center">
-                        <iframe
-                          src={`${currentLesson.theoryPdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
-                          title={`Giáo trình PDF: ${currentLesson.title}`}
-                          className="w-full h-[78vh] lg:h-[84vh] min-h-[600px] border-none block bg-slate-950"
-                        />
-                        
-                        {/* Mobile & Compatibility Fallback helper banner */}
-                        <div className="w-full bg-slate-900/90 border-t border-slate-800 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-                          <span className="text-center sm:text-left">
-                            Nếu thiết bị di động không hiển thị khung PDF, hãy bấm nút mở trực tiếp:
-                          </span>
-                          <a
-                            href={currentLesson.theoryPdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-bold text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
-                          >
-                            Xem PDF trực tiếp trong tab mới <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-12 text-center text-slate-400 text-sm">
-                      <FileText className="w-12 h-12 mx-auto mb-3 text-slate-600" />
-                      Tài liệu giáo trình PDF cho bài học này đang được chuẩn bị.
-                    </div>
-                  )}
-
-                  {/* Core Concepts & Learning Objectives */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-3">
-                        <Terminal className={`w-4 h-4 ${themeText}`} />
-                        Kỹ Thuật Thuật Toán Nòng Cốt
-                      </h4>
-                      <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
-                        {currentLesson.coreConcepts.map((concept, idx) => (
-                          <li key={idx} className="flex items-start gap-2">
-                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${isBasic ? 'bg-emerald-500' : isBronze ? 'bg-amber-500' : 'bg-cyan-500'}`} />
-                            <span>{concept}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-3">
-                        <Award className="w-4 h-4 text-emerald-500" />
-                        Mục Tiêu Năng Lực Đầu Ra
-                      </h4>
-                      <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
-                        <li className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                          <span>Nắm vững các định lý, công thức toán học và cơ chế vận hành của giải thuật.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                          <span>Cài đặt mã nguồn chuẩn mực, tối ưu hóa thời gian chạy và bộ nhớ.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                          <span>Vận dụng giải quyết trọn vẹn 100% test cases của các bài tập trong chuyên đề.</span>
-                        </li>
-                      </ul>
-                    </div>
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-md border border-slate-200 dark:border-slate-700 text-[11px] font-medium">
+                    {['all', 'Thuật toán', 'HSG', 'Olympic', 'Chuyên Tin'].map(src => (
+                      <button
+                        key={src}
+                        onClick={() => setSourceFilter(src)}
+                        className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                          sourceFilter === src
+                            ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 font-bold shadow-xs'
+                            : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
+                        }`}
+                      >
+                        {src === 'all' ? 'Tất cả' : src}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* TAB 2: PROBLEMS LIST */}
-              {activeTab === 'problems' && (
-                <div className="space-y-4">
-                  {/* Search and Filter Controls */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/70 p-3 rounded-lg border border-slate-800">
-                    <div className="relative flex-1">
-                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        placeholder="Tìm bài tập theo tên hoặc từ khóa..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-md pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-slate-600 font-mono"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                      <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      {(['all', 'Thuật toán', 'HSG'] as const).map(source => (
-                        <button
-                          key={source}
-                          onClick={() => setSourceFilter(source)}
-                          className={`text-xs font-mono px-2.5 py-1 rounded transition-colors whitespace-nowrap cursor-pointer ${
-                            sourceFilter === source
-                              ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                          }`}
-                        >
-                          {source === 'all' ? 'Tất cả' : source}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Problems Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Split-pane Workspace: Left (Problem List) + Right (Problem Workbench) */}
+              <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                {/* Master Column: Problem List */}
+                <div className="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 flex flex-col shrink-0 max-h-[35vh] md:max-h-full overflow-y-auto">
+                  <div className="p-2 space-y-1">
                     {filteredProblems.map((prob, pIdx) => {
-                      const isSolved = completedProblems[prob.id];
+                      const isSelected = prob.id === activeProblem?.id;
+                      const isDone = completedProblems[prob.id];
 
                       return (
                         <div
                           key={prob.id}
                           onClick={() => {
-                            setSelectedProblem(prob);
+                            setSelectedProblemId(prob.id);
                             setActiveTestIndex(0);
                             setUserInputOutput('');
                             setTestResult('idle');
                           }}
-                          className={`p-4 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
-                            isSolved
-                              ? 'bg-slate-900/40 border-emerald-500/20 hover:border-emerald-500/40'
-                              : 'bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+                          className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 ${
+                            isSelected
+                              ? `bg-white dark:bg-slate-800 border-cyan-500 dark:border-cyan-500 shadow-xs ring-1 ring-cyan-500/20`
+                              : 'bg-white/40 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-800/80 hover:bg-white dark:hover:bg-slate-800/60'
                           }`}
                         >
-                          <div>
-                            <div className="flex items-center justify-between gap-2 mb-2">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-bold border ${
-                                    prob.source === 'HSG' || prob.source === 'Olympic' || prob.source === 'Chuyên Tin'
-                                      ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
-                                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                  }`}
-                                >
-                                  {prob.source}
-                                </span>
-                                {prob.hasTestCases && (
-                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                                    {prob.testCases?.length || prob.totalTests || 15} Tests
-                                  </span>
-                                )}
-                              </div>
+                          <button
+                            type="button"
+                            onClick={e => handleToggleProblemDone(prob.id, e)}
+                            className="mt-0.5 shrink-0 cursor-pointer"
+                            title={isDone ? 'Đánh dấu chưa giải' : 'Đánh dấu đã giải'}
+                          >
+                            {isDone ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-600 hover:border-emerald-500" />
+                            )}
+                          </button>
 
-                              <button
-                                onClick={e => handleToggleProblemDone(prob.id, e)}
-                                className={`w-5 h-5 rounded flex items-center justify-center transition-colors cursor-pointer ${
-                                  isSolved
-                                    ? 'bg-emerald-500 text-slate-950'
-                                    : 'border border-slate-700 hover:border-slate-500 text-transparent'
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1 mb-0.5">
+                              <span
+                                className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
+                                  prob.source === 'HSG'
+                                    ? 'bg-rose-500/10 text-rose-500'
+                                    : prob.source === 'Olympic'
+                                    ? 'bg-purple-500/10 text-purple-400'
+                                    : prob.source === 'Chuyên Tin'
+                                    ? 'bg-amber-500/10 text-amber-500'
+                                    : 'bg-emerald-500/10 text-emerald-500'
                                 }`}
-                                title={isSolved ? 'Đã giải thành công' : 'Đánh dấu đã giải xong'}
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                              </button>
+                                {prob.source}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">{prob.point} pts</span>
                             </div>
 
-                            <h4 className="text-sm font-semibold text-white group-hover:text-amber-400 transition-colors line-clamp-1 mb-1.5">
+                            <h4 className={`text-xs font-bold line-clamp-1 ${isSelected ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-800 dark:text-slate-200'}`}>
                               {pIdx + 1}. {prob.title}
                             </h4>
 
-                            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
-                              {prob.preview}
-                            </p>
-                          </div>
-
-                          <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
-                            <div className="flex items-center gap-3">
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-slate-400" /> {prob.timeLimit}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <HardDrive className="w-3 h-3 text-slate-400" /> {prob.memoryLimit}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1 text-slate-400 group-hover:text-slate-200">
-                              <span>Làm bài</span>
-                              <ChevronRight className="w-3 h-3" />
+                            <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-slate-400">
+                              <span>TL: {prob.timeLimit}</span>
+                              <span>•</span>
+                              <span>ML: {prob.memoryLimit}</span>
                             </div>
                           </div>
                         </div>
                       );
                     })}
-                  </div>
 
-                  {filteredProblems.length === 0 && (
-                    <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl">
-                      <Code2 className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                      <p className="text-xs text-slate-400">Không tìm thấy bài tập nào phù hợp với bộ lọc.</p>
-                    </div>
-                  )}
+                    {filteredProblems.length === 0 && (
+                      <div className="p-8 text-center text-slate-400 text-xs">
+                        Không có bài tập nào phù hợp.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
 
-              {/* TAB 3: TEST CASES & SOLUTIONS */}
-              {activeTab === 'testcases' && (
-                <div className="space-y-4">
-                  <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 mb-4">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-2">
-                      <Download className="w-4 h-4 text-amber-400" />
-                      Bộ Dữ Liệu Kiểm Thử & Chấm Offline
-                    </h3>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Tải gói test cases (.zip) hoàn chỉnh với input/output chuẩn phục vụ chấm ngoại tuyến trên máy tính cá nhân qua Themis, CMS hoặc script tự động.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {currentLesson.problems
-                      .filter(p => p.hasTestCases)
-                      .map(prob => (
-                        <div
-                          key={prob.id}
-                          className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col justify-between"
-                        >
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold">
-                                Gói Chấm Off-line
-                              </span>
-                              <span className="text-xs text-slate-400 font-mono">
-                                {prob.testCases?.length || prob.totalTests || 15} Tests
-                              </span>
-                            </div>
-                            <h4 className="text-sm font-bold text-white mb-2">{prob.title}</h4>
-                            <p className="text-xs text-slate-400 mb-4">
-                              Bao gồm bộ test cases chính thức và file input/output tiêu chuẩn.
-                            </p>
+                {/* Detail Column: Problem Interactive Workbench */}
+                <div className="flex-1 flex flex-col overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 space-y-5">
+                  {activeProblem ? (
+                    <>
+                      {/* Problem Header Card */}
+                      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                          <div className="flex items-center gap-3">
+                            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                              {activeProblem.title}
+                            </h2>
+                            <span
+                              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase border ${
+                                activeProblem.source === 'HSG'
+                                  ? 'bg-rose-500/10 text-rose-500 border-rose-500/30'
+                                  : activeProblem.source === 'Olympic'
+                                  ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                                  : activeProblem.source === 'Chuyên Tin'
+                                  ? 'bg-amber-500/10 text-amber-500 border-amber-500/30'
+                                  : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                              }`}
+                            >
+                              {activeProblem.source}
+                            </span>
                           </div>
 
-                          <div className="flex items-center gap-2 pt-3 border-t border-slate-800">
-                            {prob.testCaseZipUrl && (
+                          <div className="flex items-center gap-2">
+                            {activeProblem.pdfUrl && (
                               <a
-                                href={prob.testCaseZipUrl}
-                                download
-                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition-colors border border-slate-700"
+                                href={activeProblem.pdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
+                                title="Mở file PDF gốc của đề bài"
                               >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>Tải TestCases (.zip)</span>
+                                <ExternalLink className="w-3.5 h-3.5 text-cyan-500" />
+                                <span>Xem PDF gốc</span>
                               </a>
                             )}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </main>
-      </div>
 
-      {/* Problem Details & Interactive Per-Test Runner Modal */}
-      {selectedProblem && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2.5">
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase border ${
-                    selectedProblem.source === 'HSG' || selectedProblem.source === 'Olympic' || selectedProblem.source === 'Chuyên Tin'
-                      ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
-                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                  }`}
-                >
-                  {selectedProblem.source}
-                </span>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white line-clamp-1">{selectedProblem.title}</h3>
-              </div>
-
-              <button
-                onClick={() => setSelectedProblem(null)}
-                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors text-xs font-mono cursor-pointer"
-              >
-                Đóng (ESC)
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 text-xs">
-              {/* Meta stats bar */}
-              <div className="grid grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 font-mono text-center">
-                <div>
-                  <span className="text-slate-500 dark:text-slate-400 block mb-0.5">Giới hạn thời gian</span>
-                  <span className="text-slate-900 dark:text-white font-semibold">{selectedProblem.timeLimit}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 dark:text-slate-400 block mb-0.5">Giới hạn bộ nhớ</span>
-                  <span className="text-slate-900 dark:text-white font-semibold">{selectedProblem.memoryLimit}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 dark:text-slate-400 block mb-0.5">Điểm số</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{selectedProblem.point} pts</span>
-                </div>
-              </div>
-
-              {/* Problem Content divided into 2 distinct sections */}
-              {(() => {
-                const raw = selectedProblem.problemContent || selectedProblem.preview;
-                const splitMatch = raw.match(/\n(?=Input\b|Output\b|Example\b|Ví dụ\b|Test\s*1\b)/i);
-                let statement = raw;
-                let specAndExample = '';
-
-                if (splitMatch && splitMatch.index !== undefined) {
-                  statement = raw.substring(0, splitMatch.index).trim();
-                  specAndExample = raw.substring(splitMatch.index).trim();
-                }
-
-                return (
-                  <div className="space-y-4">
-                    {/* Part 1: Problem Statement */}
-                    <div className="space-y-1.5">
-                      <h4 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                        <span>Nội dung yêu cầu đề bài</span>
-                      </h4>
-                      <div className="bg-white dark:bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 leading-relaxed font-sans max-h-64 overflow-y-auto text-xs sm:text-sm shadow-xs select-text">
-                        <MathRenderer content={statement} />
-                      </div>
-                    </div>
-
-                    {/* Part 2: Input/Output Specs & Example */}
-                    {specAndExample && (
-                      <div className="space-y-1.5">
-                        <h4 className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-amber-500" />
-                          <span>Quy cách Nhập / Xuất & Ví dụ mẫu</span>
-                        </h4>
-                        <div className="bg-amber-50/60 dark:bg-slate-950/80 p-4 rounded-xl border border-amber-200 dark:border-amber-500/20 text-slate-900 dark:text-slate-100 font-mono text-xs sm:text-sm max-h-64 overflow-y-auto select-text">
-                          <MathRenderer content={specAndExample} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Discrete Test Cases Viewer & Runner */}
-              {selectedProblem.hasTestCases && (
-                <div className="space-y-3 bg-slate-50 dark:bg-slate-950/90 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h4 className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                      <Terminal className="w-4 h-4" />
-                      <span>Kiểm tra từng Test Case</span>
-                    </h4>
-                    {selectedProblem.testCaseZipUrl && (
-                      <a
-                        href={selectedProblem.testCaseZipUrl}
-                        download
-                        className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 font-mono text-[11px]"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Tải toàn bộ bộ test (.zip)</span>
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Test selector tabs */}
-                  {selectedProblem.testCases && selectedProblem.testCases.length > 0 && (
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-200 dark:border-slate-800">
-                      {selectedProblem.testCases.map((tc, tcIdx) => (
-                        <button
-                          key={tc.id}
-                          onClick={() => {
-                            setActiveTestIndex(tcIdx);
-                            setUserInputOutput('');
-                            setTestResult('idle');
-                          }}
-                          className={`text-xs font-mono px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
-                            activeTestIndex === tcIdx
-                              ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
-                              : 'bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
-                          }`}
-                        >
-                          {tc.id}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Current Active Test Display */}
-                  {(() => {
-                    const currentTest = selectedProblem.testCases && selectedProblem.testCases[activeTestIndex]
-                      ? selectedProblem.testCases[activeTestIndex]
-                      : { id: 'Test Mẫu', input: selectedProblem.sampleInput || '', output: selectedProblem.sampleOutput || '' };
-
-                    return (
-                      <div className="space-y-3 pt-1">
-                        {/* Input Box with One-Click Copy */}
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 dark:text-slate-400">
-                            <span className="font-bold text-slate-900 dark:text-slate-300">Dữ liệu Input ({currentTest.id}):</span>
-                            <button
-                              onClick={() => handleCopyInput(currentTest.input)}
-                              className="flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
-                            >
-                              {hasCopiedInput ? (
-                                <>
-                                  <Check className="w-3 h-3 text-emerald-500" />
-                                  <span className="text-emerald-500 font-semibold">Đã copy!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3" />
-                                  <span>Copy Input</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 font-mono text-xs overflow-x-auto max-h-32 select-all">
-                            {currentTest.input}
-                          </pre>
-                        </div>
-
-                        {/* Expected Output Box with Copy Option */}
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 dark:text-slate-400">
-                            <span className="font-bold text-emerald-700 dark:text-emerald-400">Đáp án Output kỳ vọng:</span>
-                            <button
-                              onClick={() => handleCopyOutput(currentTest.output)}
-                              className="flex items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
-                            >
-                              {hasCopiedOutput ? (
-                                <>
-                                  <Check className="w-3 h-3 text-emerald-500" />
-                                  <span className="text-emerald-500 font-semibold">Đã copy!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3" />
-                                  <span>Copy Output</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 font-mono text-xs overflow-x-auto max-h-28 select-all">
-                            {currentTest.output}
-                          </pre>
-                        </div>
-
-                        {/* Output Verification Area */}
-                        <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800/80">
-                          <label className="text-[11px] font-mono text-slate-800 dark:text-slate-300 flex items-center justify-between">
-                            <span>Dán kết quả chạy từ chương trình của bạn để kiểm tra:</span>
-                            {testResult === 'passed' && (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> CHÍNH XÁC (ACCEPTED)
-                              </span>
-                            )}
-                            {testResult === 'failed' && (
-                              <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
-                                <XCircle className="w-3.5 h-3.5" /> SAI KẾT QUẢ (WRONG ANSWER)
-                              </span>
-                            )}
-                          </label>
-
-                          <div className="flex gap-2">
-                            <textarea
-                              rows={2}
-                              value={userInputOutput}
-                              onChange={e => {
-                                setUserInputOutput(e.target.value);
-                                setTestResult('idle');
-                              }}
-                              placeholder="Dán output của bạn vào đây..."
-                              className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-mono text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-slate-400 dark:focus:border-slate-700"
-                            />
                             <button
                               type="button"
-                              onClick={handleVerifyOutput}
-                              className={`px-4 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                                userInputOutput.trim() ? themeBtn : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                              onClick={() => handleToggleProblemDone(activeProblem.id)}
+                              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                                completedProblems[activeProblem.id]
+                                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40'
+                                  : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                               }`}
-                              disabled={!userInputOutput.trim()}
                             >
-                              <Play className="w-3.5 h-3.5" />
-                              <span>Kiểm Tra</span>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>{completedProblems[activeProblem.id] ? 'Đã hoàn thành' : 'Đánh dấu xong (+15 XP)'}</span>
                             </button>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
-              <button
-                onClick={() => handleToggleProblemDone(selectedProblem.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  completedProblems[selectedProblem.id]
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
-                }`}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>
-                  {completedProblems[selectedProblem.id] ? 'Đã hoàn thành bài tập' : 'Đánh dấu hoàn thành (+15 XP)'}
-                </span>
-              </button>
 
-              <button
-                onClick={() => setSelectedProblem(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-              >
-                Đóng
-              </button>
+                        {/* Clean 5-column Specs Card matching clean problem sheet */}
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 bg-slate-50 dark:bg-slate-950/80 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-center font-sans">
+                          <div className="p-1">
+                            <span className="text-slate-700 dark:text-slate-300 font-semibold">
+                              Điểm: <span className="font-bold text-slate-900 dark:text-white">{activeProblem.point ?? 100}</span>
+                            </span>
+                          </div>
+                          <div className="p-1 border-l border-slate-200 dark:border-slate-800">
+                            <span className="text-slate-700 dark:text-slate-300 font-semibold">
+                              Thời gian: <span className="font-bold text-slate-900 dark:text-white">{activeProblem.timeLimit || '1.0s'}</span>
+                            </span>
+                          </div>
+                          <div className="p-1 border-l border-slate-200 dark:border-slate-800">
+                            <span className="text-slate-700 dark:text-slate-300 font-semibold">
+                              Bộ nhớ: <span className="font-bold text-slate-900 dark:text-white">{activeProblem.memoryLimit || '256MB'}</span>
+                            </span>
+                          </div>
+                          <div className="p-1 border-l border-slate-200 dark:border-slate-800">
+                            <span className="text-slate-700 dark:text-slate-300 font-semibold">
+                              Input: <span className="font-bold text-slate-900 dark:text-white">bàn phím</span>
+                            </span>
+                          </div>
+                          <div className="p-1 border-l border-slate-200 dark:border-slate-800">
+                            <span className="text-slate-700 dark:text-slate-300 font-semibold">
+                              Output: <span className="font-bold text-slate-900 dark:text-white">màn hình</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Problem Statement Box */}
+                      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs">
+                        <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans">
+                          <MathRenderer content={activeProblem.problemContent || activeProblem.preview} />
+                        </div>
+                      </div>
+
+                      {/* In-page Interactive Test Runner */}
+                      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <Terminal className="w-4 h-4 text-emerald-500" />
+                            Kiểm Thử Trực Tiếp (Zero-Popup Test Runner)
+                          </h3>
+
+                          {/* Test selector tabs */}
+                          {activeProblem.testCases && activeProblem.testCases.length > 1 && (
+                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                              {activeProblem.testCases.map((tc, tIdx) => (
+                                <button
+                                  key={tc.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveTestIndex(tIdx);
+                                    setUserInputOutput('');
+                                    setTestResult('idle');
+                                  }}
+                                  className={`px-2.5 py-1 rounded text-xs font-mono font-semibold transition-colors cursor-pointer ${
+                                    activeTestIndex === tIdx
+                                      ? 'bg-cyan-500 text-slate-950 font-bold'
+                                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                  }`}
+                                >
+                                  {tc.id}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Current Test Case Input & Expected Output */}
+                        {(() => {
+                          const currentTest = activeProblem.testCases && activeProblem.testCases[activeTestIndex]
+                            ? activeProblem.testCases[activeTestIndex]
+                            : {
+                                input: activeProblem.sampleInput || '',
+                                output: activeProblem.sampleOutput || ''
+                              };
+
+                          return (
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Sample Input Block */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold uppercase">
+                                      Đầu vào (Input)
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopyInput(currentTest.input)}
+                                      className="inline-flex items-center gap-1 text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
+                                    >
+                                      {hasCopiedInput ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                      <span>{hasCopiedInput ? 'Đã sao chép' : 'Sao chép Input'}</span>
+                                    </button>
+                                  </div>
+                                  <pre className="p-3 bg-slate-950 text-slate-100 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800 max-h-40 selection:bg-cyan-500/40">
+                                    {currentTest.input || '(Không có dữ liệu đầu vào mẫu)'}
+                                  </pre>
+                                </div>
+
+                                {/* Expected Output Block */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold uppercase">
+                                      Đầu ra mong đợi (Expected Output)
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopyOutput(currentTest.output)}
+                                      className="inline-flex items-center gap-1 text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
+                                    >
+                                      {hasCopiedOutput ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                      <span>{hasCopiedOutput ? 'Đã sao chép' : 'Sao chép Output'}</span>
+                                    </button>
+                                  </div>
+                                  <pre className="p-3 bg-slate-950 text-emerald-400 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800 max-h-40 selection:bg-emerald-500/40">
+                                    {currentTest.output || '(Không có dữ liệu đầu ra mẫu)'}
+                                  </pre>
+                                </div>
+                              </div>
+
+                              {/* Interactive Answer Verification Section */}
+                              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                    <Play className="w-3.5 h-3.5 text-cyan-500" />
+                                    Dán kết quả chạy từ IDE / Trình biên dịch của bạn để kiểm tra:
+                                  </label>
+                                  {testResult !== 'idle' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setUserInputOutput('');
+                                        setTestResult('idle');
+                                      }}
+                                      className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <RotateCcw className="w-3 h-3" />
+                                      <span>Đặt lại</span>
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                  <textarea
+                                    value={userInputOutput}
+                                    onChange={e => {
+                                      setUserInputOutput(e.target.value);
+                                      if (testResult !== 'idle') setTestResult('idle');
+                                    }}
+                                    placeholder="Dán kết quả chương trình (stdout) của bạn vào đây..."
+                                    rows={2}
+                                    className="flex-1 p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-mono text-xs text-slate-900 dark:text-white focus:outline-hidden focus:border-cyan-500 resize-y"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={handleVerifyOutput}
+                                    disabled={!userInputOutput.trim()}
+                                    className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 self-start sm:self-auto"
+                                  >
+                                    <Play className="w-3.5 h-3.5" />
+                                    <span>Kiểm tra kết quả</span>
+                                  </button>
+                                </div>
+
+                                {/* Verification Result Banner */}
+                                {testResult === 'passed' && (
+                                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-600 dark:text-emerald-400 flex items-center justify-between text-xs font-semibold">
+                                    <div className="flex items-center gap-2">
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                      <span>CHÍNH XÁC - Đầu ra khớp 100% với kết quả chuẩn! (+15 XP)</span>
+                                    </div>
+                                    <span className="font-mono text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded">PASSED</span>
+                                  </div>
+                                )}
+
+                                {testResult === 'failed' && (
+                                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 flex items-center justify-between text-xs font-semibold">
+                                    <div className="flex items-center gap-2">
+                                      <XCircle className="w-4 h-4 text-rose-500" />
+                                      <span>CHƯA KHỚP - Đầu ra chưa giống với kết quả mong đợi. Vui lòng kiểm tra lại logic thuật toán hoặc khoảng trắng/dòng mới.</span>
+                                    </div>
+                                    <span className="font-mono text-[10px] bg-rose-500/20 px-2 py-0.5 rounded">FAILED</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Problem Navigation Footer */}
+                      <div className="flex items-center justify-between pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectProblemByOffset(-1)}
+                          disabled={activeProblemIndex <= 0}
+                          className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-40 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                          <span>Bài trước</span>
+                        </button>
+
+                        <span className="text-xs font-mono text-slate-400">
+                          Bài {activeProblemIndex + 1} / {filteredProblems.length}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSelectProblemByOffset(1)}
+                          disabled={activeProblemIndex >= filteredProblems.length - 1}
+                          className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-40 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        >
+                          <span>Bài tiếp theo</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-12 text-center text-slate-400 text-xs">
+                      Chọn một bài tập từ danh sách bên trái để bắt đầu thực hành.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+
+          {/* TAB 3: SUMMARY & TOPIC WRAPUP */}
+          {currentTab === 'summary' && (
+            <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto w-full">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs text-center space-y-4">
+                <div className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center border ${themeBadge}`}>
+                  <Award className="w-8 h-8" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
+                    Tổng Kết Bài {currentLesson.order}: {currentLesson.title}
+                  </h2>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                    Chúc mừng bạn đã hoàn thành việc ôn luyện chuyên đề này! Dưới đây là bảng thống kê tổng quan tiến độ của bạn trong bài học.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto pt-2">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                    <span className="text-slate-400 text-xs block mb-1">Lý thuyết</span>
+                    <span className={`text-base font-bold ${completedTheories[currentLesson.id] ? 'text-emerald-500' : 'text-slate-400'}`}>
+                      {completedTheories[currentLesson.id] ? 'Đã hoàn thành' : 'Chưa xong'}
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                    <span className="text-slate-400 text-xs block mb-1">Bài tập đã giải</span>
+                    <span className="text-base font-bold text-emerald-500">
+                      {currentLesson.problems.filter(p => completedProblems[p.id]).length} / {currentLesson.problems.length}
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                    <span className="text-slate-400 text-xs block mb-1">Tổng XP tích lũy</span>
+                    <span className="text-base font-bold text-amber-500">
+                      {(completedTheories[currentLesson.id] ? 25 : 0) + currentLesson.problems.filter(p => completedProblems[p.id]).length * 15} XP
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentTab('practice')}
+                    className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Tiếp tục giải bài tập
+                  </button>
+
+                  {selectedLessonIndex < courseData.lessons.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedLessonIndex(prev => prev + 1);
+                        setCurrentTab('theory');
+                      }}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${themeBtn}`}
+                    >
+                      Sang Bài {currentLesson.order + 1}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 };

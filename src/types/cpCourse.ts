@@ -44,7 +44,9 @@ export interface CPCourseData {
   subtitle: string;
   levelBadge: string;
   description: string;
-  accentColor: 'emerald' | 'amber' | 'cyan';
+  accentColor: string;
   accentClass: string;
   lessons: CPLesson[];
 }
+
+export type CPCourse = CPCourseData;
