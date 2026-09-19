@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import type { ModuleType, UserProgressState } from '../types/curriculum';
 import { CURRICULUM_DATA } from '../data/curriculumData';
+import { useAuth } from './AuthContext';
 
 interface LearningContextType {
   activeModuleId: ModuleType;
@@ -20,8 +21,6 @@ interface LearningContextType {
   resetLessonProgress: (lessonId: string) => void;
   unlockNextLesson: (currentLessonId: string) => void;
 }
-
-const STORAGE_KEY = 'thpt_office_learning_v1';
 
 const defaultProgress: Record<string, UserProgressState> = {
   'word-lesson-1': { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false, isUnlocked: true },
@@ -47,110 +46,72 @@ const defaultProgress: Record<string, UserProgressState> = {
 const LearningContext = createContext<LearningContextType | undefined>(undefined);
 
 export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser, updateCurrentUserProgress } = useAuth();
+
   const [activeModuleId, setActiveModuleId] = useState<ModuleType>('word');
   const [activeLessonId, setActiveLessonId] = useState<string>('word-lesson-1');
   const [currentTab, setCurrentTab] = useState<'theory' | 'practice' | 'quiz'>('theory');
 
-  const [userProgress, setUserProgress] = useState<Record<string, UserProgressState>>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.userProgress) {
-          return { ...defaultProgress, ...parsed.userProgress };
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return defaultProgress;
-  });
+  // If currentUser has progress, sync with it; otherwise use default
+  const userProgress = currentUser?.progress
+    ? { ...defaultProgress, ...currentUser.progress }
+    : defaultProgress;
 
-  const [xpPoints, setXpPoints] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return typeof parsed.xpPoints === 'number' ? parsed.xpPoints : 0;
-      }
-    } catch {
-      // ignore
-    }
-    return 0;
-  });
-
-  const [streak] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return typeof parsed.streak === 'number' ? parsed.streak : 1;
-      }
-    } catch {
-      // ignore
-    }
-    return 1;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          userProgress,
-          xpPoints,
-          streak,
-          lastActive: new Date().toISOString()
-        })
-      );
-    } catch {
-      // ignore
-    }
-  }, [userProgress, xpPoints, streak]);
+  const xpPoints = currentUser?.xpPoints ?? 0;
+  const streak = currentUser?.streak ?? 1;
 
   const markTheoryCompleted = (lessonId: string) => {
-    setUserProgress(prev => {
-      const current = prev[lessonId] || { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false, isUnlocked: true };
-      if (current.theoryCompleted) return prev;
-      setXpPoints(xp => xp + 20);
+    updateCurrentUserProgress(user => {
+      const current = user.progress[lessonId] || { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false, isUnlocked: true };
+      if (current.theoryCompleted) return user;
       return {
-        ...prev,
-        [lessonId]: {
-          ...current,
-          theoryCompleted: true
+        ...user,
+        xpPoints: user.xpPoints + 20,
+        progress: {
+          ...user.progress,
+          [lessonId]: {
+            ...current,
+            theoryCompleted: true
+          }
         }
       };
     });
   };
 
   const markPracticeCompleted = (lessonId: string) => {
-    setUserProgress(prev => {
-      const current = prev[lessonId] || { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false, isUnlocked: true };
-      if (current.practiceCompleted) return prev;
-      setXpPoints(xp => xp + 40);
+    updateCurrentUserProgress(user => {
+      const current = user.progress[lessonId] || { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false, isUnlocked: true };
+      if (current.practiceCompleted) return user;
       return {
-        ...prev,
-        [lessonId]: {
-          ...current,
-          practiceCompleted: true
+        ...user,
+        xpPoints: user.xpPoints + 40,
+        progress: {
+          ...user.progress,
+          [lessonId]: {
+            ...current,
+            practiceCompleted: true
+          }
         }
       };
     });
   };
 
   const submitQuizScore = (lessonId: string, score: number, totalQuestions: number) => {
-    setUserProgress(prev => {
-      const current = prev[lessonId] || { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false, isUnlocked: true };
+    updateCurrentUserProgress(user => {
+      const current = user.progress[lessonId] || { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false, isUnlocked: true };
       const gained = Math.round((score / totalQuestions) * 40);
-      if (!current.quizCompleted) {
-        setXpPoints(xp => xp + gained);
-      }
+      const newXp = current.quizCompleted ? user.xpPoints : user.xpPoints + gained;
+
       return {
-        ...prev,
-        [lessonId]: {
-          ...current,
-          quizScore: Math.max(current.quizScore, score),
-          quizCompleted: true
+        ...user,
+        xpPoints: newXp,
+        progress: {
+          ...user.progress,
+          [lessonId]: {
+            ...current,
+            quizScore: Math.max(current.quizScore, score),
+            quizCompleted: true
+          }
         }
       };
     });
@@ -165,26 +126,32 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const currentIndex = allLessonIds.indexOf(currentLessonId);
     if (currentIndex !== -1 && currentIndex + 1 < allLessonIds.length) {
       const nextId = allLessonIds[currentIndex + 1];
-      setUserProgress(prev => ({
-        ...prev,
-        [nextId]: {
-          ...(prev[nextId] || { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false }),
-          isUnlocked: true
+      updateCurrentUserProgress(user => ({
+        ...user,
+        progress: {
+          ...user.progress,
+          [nextId]: {
+            ...(user.progress[nextId] || { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false }),
+            isUnlocked: true
+          }
         }
       }));
     }
   };
 
   const resetLessonProgress = (lessonId: string) => {
-    setUserProgress(prev => ({
-      ...prev,
-      [lessonId]: {
-        ...(prev[lessonId] || {}),
-        theoryCompleted: false,
-        practiceCompleted: false,
-        quizScore: 0,
-        quizCompleted: false,
-        isUnlocked: prev[lessonId]?.isUnlocked ?? true
+    updateCurrentUserProgress(user => ({
+      ...user,
+      progress: {
+        ...user.progress,
+        [lessonId]: {
+          ...(user.progress[lessonId] || {}),
+          theoryCompleted: false,
+          practiceCompleted: false,
+          quizScore: 0,
+          quizCompleted: false,
+          isUnlocked: user.progress[lessonId]?.isUnlocked ?? true
+        }
       }
     }));
   };

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { LearningProvider, useLearning } from './context/LearningContext';
 import type { ModuleType } from './types/curriculum';
 import { CURRICULUM_DATA } from './data/curriculumData';
 import { HeaderNav } from './components/navigation/HeaderNav';
 import { CurriculumView } from './components/views/CurriculumView';
 import { LessonUnitView } from './components/views/LessonUnitView';
+import { TeacherDashboard } from './components/views/TeacherDashboard';
 import { SummaryModal } from './components/modals/SummaryModal';
+import { LoginModal } from './components/modals/LoginModal';
 
 const AppContent: React.FC = () => {
   const {
@@ -17,17 +20,32 @@ const AppContent: React.FC = () => {
     userProgress
   } = useLearning();
 
-  const [viewMode, setViewMode] = useState<'curriculum' | 'lesson'>('curriculum');
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-  const [isSummaryOpen, setIsSummaryOpen] = useState<boolean>(false);
+  const { currentUser } = useAuth();
 
+  const [viewMode, setViewMode] = useState<'curriculum' | 'lesson' | 'dashboard'>('curriculum');
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try {
+      const savedTheme = localStorage.getItem('thpt_office_theme');
+      if (savedTheme) {
+        return savedTheme === 'dark';
+      }
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch {
+      return false;
+    }
+  });
+
+  const [isSummaryOpen, setIsSummaryOpen] = useState<boolean>(false);
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+
+  // Apply dark mode reliably to both html and documentElement
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('thpt_office_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('thpt_office_theme', 'light');
     }
   }, [darkMode]);
 
@@ -71,18 +89,22 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-sky-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-sky-500 selection:text-white transition-colors duration-200">
       {/* Header Navigation */}
       <HeaderNav
         darkMode={darkMode}
-        onToggleDarkMode={() => setDarkMode(!darkMode)}
-        onBackToCurriculum={() => setViewMode('curriculum')}
-        showBackButton={viewMode === 'lesson'}
+        onToggleDarkMode={() => setDarkMode(prev => !prev)}
+        onGoHome={() => setViewMode('curriculum')}
+        onOpenDashboard={() => setViewMode('dashboard')}
+        onOpenLogin={() => setIsLoginOpen(true)}
+        currentView={viewMode}
       />
 
       {/* Main View Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {viewMode === 'curriculum' ? (
+        {viewMode === 'dashboard' && currentUser?.role === 'teacher' ? (
+          <TeacherDashboard />
+        ) : viewMode === 'curriculum' ? (
           <CurriculumView onSelectLesson={handleSelectLesson} />
         ) : (
           <LessonUnitView
@@ -107,15 +129,26 @@ const AppContent: React.FC = () => {
           onClose={() => setIsSummaryOpen(false)}
         />
       )}
+
+      {/* Login / Switch Account Modal */}
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onSuccess={() => {
+          // If teacher logged in, offer to stay or view dashboard
+        }}
+      />
     </div>
   );
 };
 
 export const App: React.FC = () => {
   return (
-    <LearningProvider>
-      <AppContent />
-    </LearningProvider>
+    <AuthProvider>
+      <LearningProvider>
+        <AppContent />
+      </LearningProvider>
+    </AuthProvider>
   );
 };
 
