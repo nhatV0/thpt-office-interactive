@@ -291,7 +291,7 @@ export const TeacherDashboard: React.FC = () => {
                                     : 'opacity-40 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 line-through'
                                 }`}
                               >
-                                {c.id === 'word' ? 'Word' : c.id === 'excel' ? 'Excel' : c.id === 'powerpoint' ? 'PowerPoint' : c.id === 'cp-bronze' ? 'CP Đồng' : c.id === 'cp-silver' ? 'CP Bạc' : 'Đề MOS Word'}
+                                {c.id === 'word' ? 'Word' : c.id === 'excel' ? 'Excel' : c.id === 'powerpoint' ? 'PowerPoint' : c.id === 'cp-bronze' ? 'Nâng Cao' : c.id === 'cp-silver' ? 'Chuyên Sâu' : 'Đề MOS Word'}
                               </button>
                             );
                           })}

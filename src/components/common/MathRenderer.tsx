@@ -1,21 +1,76 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { Copy, Check, Terminal, Code2, Sparkles } from 'lucide-react';
 
 interface MathRendererProps {
   content: string;
   className?: string;
 }
 
+// Code Block Component with Copy and Language Badge
+const CodeBlock: React.FC<{ code: string; language: string }> = ({ code, language }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const isCpp = language === 'cpp' || language === 'c++';
+  const langLabel = isCpp ? 'C++ 17/20' : language === 'python' || language === 'py' ? 'Python 3' : 'Code';
+  const badgeColor = isCpp ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+
+  return (
+    <div className="my-4 rounded-xl border border-slate-800 bg-slate-950 overflow-hidden shadow-xl">
+      {/* Code Header Bar */}
+      <div className="px-4 py-2 bg-slate-900/90 border-b border-slate-800/80 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5 mr-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+          </div>
+          <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${badgeColor} flex items-center gap-1`}>
+            {isCpp ? <Code2 className="w-3 h-3" /> : <Terminal className="w-3 h-3" />}
+            <span>{langLabel}</span>
+          </span>
+        </div>
+
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono transition-colors cursor-pointer border border-slate-700/60"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-emerald-400 font-semibold">Đã sao chép</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              <span>Sao chép code</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Code Content */}
+      <pre className="p-4 text-xs sm:text-sm font-mono leading-relaxed text-slate-200 overflow-x-auto selection:bg-cyan-500/30">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+};
+
 export const MathRenderer: React.FC<MathRendererProps> = ({ content, className = '' }) => {
-  // Parse content for inline math $...$, \(...\), and block math $$...$$, \[...\]
   const elements = useMemo(() => {
     if (!content) return null;
 
-    // First, normalize common mathematical notations into standardized LaTeX
     let processed = content;
 
-    // Clean up OCR spacing artifacts like "M ô  ph ỏ ng" or "Đ ộ   p h ứ c"
+    // Fix OCR spacing artifacts
     processed = processed.replace(/M\s*ô\s*ph\s*ỏ\s*ng/g, 'Mô phỏng');
     processed = processed.replace(/C\s*à\s*i\s*đ\s*ặ\s*t/g, 'Cài đặt');
     processed = processed.replace(/N\s*ộ\s*i\s*dung/g, 'Nội dung');
@@ -24,45 +79,52 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
     processed = processed.replace(/t\s*h\s*i\s*đ\s*ấ\s*u/g, 'thi đấu');
     processed = processed.replace(/B\s*ư\s*ớ\s*c/g, 'Bước');
     processed = processed.replace(/V\s*í\s*d\s*ụ/g, 'Ví dụ');
+    processed = processed.replace(/G\s*i\s*ả\s*i\s*th\s*í\s*ch/g, 'Giải thích');
 
-    // Split paragraphs and code blocks
     const lines = processed.split('\n');
-    let insideCodeBlock = false;
-    let codeBuffer: string[] = [];
     const resultNodes: React.ReactNode[] = [];
 
+    let insideCode = false;
+    let codeLanguage = 'cpp';
+    let codeLines: string[] = [];
+
+    const flushCodeBlock = (keyPrefix: string) => {
+      if (codeLines.length > 0) {
+        const fullCode = codeLines.join('\n').trim();
+        resultNodes.push(
+          <CodeBlock key={`${keyPrefix}-code-${resultNodes.length}`} code={fullCode} language={codeLanguage} />
+        );
+        codeLines = [];
+      }
+      insideCode = false;
+    };
+
     const renderInlineMathAndText = (text: string, lineKey: string) => {
-      // Regex matching LaTeX patterns:
-      // 1. $$...$$ (display math)
-      // 2. \[...\] (display math)
-      // 3. $...$ (inline math)
-      // 4. \(...\) (inline math)
-      // 5. Common Big O patterns: O(1), O(n), O(log n), O(n^2), O(n log n), O(2^n), 10^8
       const tokenRegex = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^\$\n]+?\$|\\\([^\)]+?\\\)|O\([^\)]+\)|10\^\d+)/g;
-      
       const parts = text.split(tokenRegex);
+
       return parts.map((part, pIdx) => {
         if (!part) return null;
         const key = `${lineKey}-p-${pIdx}`;
 
-        // Case 1: $$...$$ or \[...\]
+        // Case 1: Display math $$...$$ or \[...\]
         if ((part.startsWith('$$') && part.endsWith('$$')) || (part.startsWith('\\[') && part.endsWith('\\]'))) {
-          const rawFormula = part.startsWith('$$') ? part.slice(2, -2) : part.slice(2, -2);
+          const rawFormula = part.slice(2, -2).trim();
           try {
-            const html = katex.renderToString(rawFormula.trim(), { displayMode: true, throwOnError: false });
-            return <div key={key} className="my-2 overflow-x-auto py-1" dangerouslySetInnerHTML={{ __html: html }} />;
+            const html = katex.renderToString(rawFormula, { displayMode: true, throwOnError: false });
+            return <div key={key} className="my-2.5 overflow-x-auto py-1" dangerouslySetInnerHTML={{ __html: html }} />;
           } catch {
             return <code key={key} className="block my-1 font-mono text-amber-300">{rawFormula}</code>;
           }
         }
 
-        // Case 2: $...$ or \(...\)
+        // Case 2: Inline math $...$ or \(...\)
         if ((part.startsWith('$') && part.endsWith('$') && part.length > 2) ||
             (part.startsWith('\\(') && part.endsWith('\\)'))) {
           const rawFormula = part.startsWith('$') ? part.slice(1, -1) : part.slice(2, -2);
           try {
             const html = katex.renderToString(rawFormula.trim(), { displayMode: false, throwOnError: false });
-            return <span key={key} className="inline-block px-1" dangerouslySetInnerHTML={{ __html: html }} />;
+            return <span key={key} className="inline-block px-1 font-mono" dangerouslySetInnerHTML={{ __html: html }} />;
           } catch {
             return <code key={key} className="text-amber-300 font-mono px-1">{rawFormula}</code>;
           }
@@ -79,109 +141,153 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
           }
         }
 
-        // Normal text segment
         return <span key={key}>{part}</span>;
       });
     };
 
-    lines.forEach((line, idx) => {
+    for (let idx = 0; idx < lines.length; idx++) {
+      const line = lines[idx];
+      const trimmed = line.trim();
       const lineKey = `line-${idx}`;
 
-      // Check code block
-      if (line.trim().startsWith('```')) {
-        if (insideCodeBlock) {
-          insideCodeBlock = false;
-          resultNodes.push(
-            <pre key={`${lineKey}-code`} className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-slate-200 font-mono text-xs overflow-x-auto my-3">
-              <code>{codeBuffer.join('\n')}</code>
-            </pre>
-          );
-          codeBuffer = [];
+      // Check explicit markdown code fences ```
+      if (trimmed.startsWith('```')) {
+        if (insideCode) {
+          flushCodeBlock(lineKey);
         } else {
-          insideCodeBlock = true;
+          insideCode = true;
+          const lang = trimmed.replace(/^```/, '').trim().toLowerCase();
+          codeLanguage = lang || 'cpp';
         }
-        return;
+        continue;
       }
 
-      if (insideCodeBlock) {
-        codeBuffer.push(line);
-        return;
+      // Detect start of code without markdown fences
+      const isCppStart =
+        trimmed.startsWith('#include <') ||
+        trimmed.startsWith('using namespace std;') ||
+        trimmed.startsWith('int main()') ||
+        trimmed.startsWith('long long ') ||
+        trimmed.startsWith('void solve()');
+
+      const isPyStart =
+        trimmed.startsWith('import sys') ||
+        trimmed.startsWith('def solve(') ||
+        trimmed.startsWith('def main(');
+
+      if (!insideCode && (isCppStart || isPyStart)) {
+        insideCode = true;
+        codeLanguage = isCppStart ? 'cpp' : 'python';
+        codeLines.push(line);
+        continue;
       }
 
-      // Check headings (Markdown style or numbered section)
-      if (line.startsWith('# ') || line.startsWith('## ') || line.startsWith('### ')) {
-        const text = line.replace(/^#+\s*/, '');
+      // If inside code, detect if code has ended
+      if (insideCode) {
+        // Line that clearly belongs to narrative text instead of code
+        const isEndOfCode =
+          /^\d+\.\s+[A-ZÀ-Ỹ]/.test(trimmed) ||
+          trimmed.startsWith('Giải thích') ||
+          trimmed.startsWith('Tóm tắt') ||
+          trimmed.startsWith('Ví dụ') ||
+          trimmed.startsWith('Bước ') ||
+          trimmed.startsWith('Bài tập') ||
+          trimmed.startsWith('Lỗi ') ||
+          trimmed.startsWith('KẾT QUẢ Ý NGHĨA');
+
+        if (isEndOfCode) {
+          flushCodeBlock(lineKey);
+        } else {
+          codeLines.push(line);
+          continue;
+        }
+      }
+
+      // Headings
+      if (trimmed.startsWith('# ') || trimmed.startsWith('## ') || trimmed.startsWith('### ')) {
+        const text = trimmed.replace(/^#+\s*/, '');
         resultNodes.push(
-          <h3 key={lineKey} className="text-base sm:text-lg font-bold text-white mt-6 mb-2 border-b border-slate-800/80 pb-1.5 flex items-center gap-2">
-            <span className="w-1.5 h-4 rounded-full bg-cyan-400" />
-            <span>{text}</span>
-          </h3>
+          <div key={lineKey} className="mt-7 mb-3">
+            <h3 className="text-base sm:text-lg font-bold text-white border-b border-slate-800 pb-2 flex items-center gap-2.5">
+              <span className="w-1.5 h-4.5 rounded-full bg-cyan-400" />
+              <span>{text}</span>
+            </h3>
+          </div>
         );
-        return;
+        continue;
       }
 
-      // Section titles like "1. Lập trình thi đấu là gì?"
-      if (/^\d+\.\s+/.test(line.trim())) {
+      // Numbered major section: "1. Lập trình thi đấu là gì?"
+      if (/^\d+\.\s+/.test(trimmed)) {
         resultNodes.push(
-          <h4 key={lineKey} className="text-sm sm:text-base font-bold text-cyan-300 mt-5 mb-1.5 flex items-center gap-1.5">
-            {renderInlineMathAndText(line, lineKey)}
-          </h4>
+          <div key={lineKey} className="mt-6 mb-2.5 bg-slate-900/60 border-l-2 border-cyan-500 pl-3 py-1 rounded-r-lg">
+            <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              {renderInlineMathAndText(trimmed, lineKey)}
+            </h4>
+          </div>
         );
-        return;
+        continue;
       }
 
-      // Bullets
-      if (line.trim().startsWith('•') || line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-        const bulletContent = line.trim().replace(/^[•\-\*]\s*/, '');
+      // Subsections "2.1. ..."
+      if (/^\d+\.\d+\.\s+/.test(trimmed)) {
         resultNodes.push(
-          <div key={lineKey} className="flex items-start gap-2.5 my-1 text-slate-300 pl-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-500 mt-2 shrink-0" />
+          <h5 key={lineKey} className="text-xs sm:text-sm font-bold text-cyan-300 mt-4 mb-1 pl-1">
+            {renderInlineMathAndText(trimmed, lineKey)}
+          </h5>
+        );
+        continue;
+      }
+
+      // Bullet points •
+      if (trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const bulletContent = trimmed.replace(/^[•\-\*]\s*/, '');
+        resultNodes.push(
+          <div key={lineKey} className="flex items-start gap-2.5 my-1 text-slate-300 pl-2 text-xs sm:text-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2 shrink-0" />
             <div className="flex-1 leading-relaxed">
               {renderInlineMathAndText(bulletContent, lineKey)}
             </div>
           </div>
         );
-        return;
+        continue;
       }
 
       // Sub-bullets ◦
-      if (line.trim().startsWith('◦')) {
-        const subContent = line.trim().replace(/^◦\s*/, '');
+      if (trimmed.startsWith('◦')) {
+        const subContent = trimmed.replace(/^◦\s*/, '');
         resultNodes.push(
-          <div key={lineKey} className="flex items-start gap-2.5 my-0.5 text-slate-400 pl-6 text-xs sm:text-sm">
+          <div key={lineKey} className="flex items-start gap-2 my-0.5 text-slate-400 pl-6 text-xs sm:text-sm">
             <span className="w-1 h-1 rounded-full bg-slate-600 mt-2 shrink-0" />
             <div className="flex-1 leading-relaxed">
               {renderInlineMathAndText(subContent, lineKey)}
             </div>
           </div>
         );
-        return;
+        continue;
       }
 
-      // Empty line
-      if (!line.trim()) {
+      // Empty space
+      if (!trimmed) {
         resultNodes.push(<div key={lineKey} className="h-2" />);
-        return;
+        continue;
       }
 
-      // Plain paragraph
+      // Regular paragraph
       resultNodes.push(
-        <p key={lineKey} className="my-1.5 leading-relaxed text-slate-300">
+        <p key={lineKey} className="my-1.5 leading-relaxed text-slate-300 text-xs sm:text-sm">
           {renderInlineMathAndText(line, lineKey)}
         </p>
       );
-    });
+    }
 
-    if (insideCodeBlock && codeBuffer.length > 0) {
-      resultNodes.push(
-        <pre key="trailing-code" className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-slate-200 font-mono text-xs overflow-x-auto my-3">
-          <code>{codeBuffer.join('\n')}</code>
-        </pre>
-      );
+    if (insideCode) {
+      flushCodeBlock('final');
     }
 
     return resultNodes;
   }, [content]);
 
-  return <div className={`select-text ${className}`}>{elements}</div>;
+  return <div className={`select-text space-y-1 ${className}`}>{elements}</div>;
 };
