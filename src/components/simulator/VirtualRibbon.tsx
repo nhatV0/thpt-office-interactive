@@ -34,6 +34,7 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
 
   const tabsByModule: Record<ModuleType, { id: string; label: string }[]> = {
     word: [
+      { id: 'file', label: 'File' },
       { id: 'home', label: 'Home' },
       { id: 'insert', label: 'Insert' },
       { id: 'layout', label: 'Layout' },
@@ -62,6 +63,44 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
 
   const renderWordControls = () => {
     switch (activeTab) {
+      case 'file':
+        return (
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex flex-col gap-1 border-r border-slate-300 dark:border-slate-700 pr-3">
+              <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">Backstage</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onAction('word-backstage-open')}
+                  className={`px-2.5 py-1 text-xs font-semibold border rounded bg-white dark:bg-slate-800 ${
+                    isHinted('word-backstage-open') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  Open Document
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onAction('word-save-doc')}
+                  className={`px-2.5 py-1 text-xs border rounded bg-white dark:bg-slate-800 ${
+                    isHinted('word-save-doc') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  Save As (.docx)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onAction('word-document-properties')}
+                  className={`px-2.5 py-1 text-xs border rounded bg-white dark:bg-slate-800 ${
+                    isHinted('word-document-properties') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  Document Properties
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'home':
         return (
           <div className="flex items-center gap-4 flex-wrap">
@@ -154,6 +193,26 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
                 </button>
               </div>
             </div>
+                <button
+                  type="button"
+                  title="Show/Hide ¶ (Ctrl+*)"
+                  onClick={() => onAction('word-show-hide-marks')}
+                  className={`p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 ${
+                    isHinted('word-show-hide-marks') ? 'ring-2 ring-sky-500 bg-sky-100 dark:bg-sky-950 animate-bounce' : ''
+                  }`}
+                >
+                  <span className="font-mono text-xs font-bold">¶</span>
+                </button>
+                <button
+                  type="button"
+                  title="Find & Replace (Ctrl+H)"
+                  onClick={() => onAction('word-find-replace')}
+                  className={`px-2 py-1 text-xs border rounded bg-white dark:bg-slate-800 ${
+                    isHinted('word-find-replace') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  Find & Replace
+                </button>
 
             {/* Styles group */}
             <div className="flex flex-col gap-1">
@@ -415,7 +474,15 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
                 </label>
                 <button
                   type="button"
-                  onClick={() => onAction('word-unlink-previous')}
+                  onClick={() => onAction('word-split-window')}
+                  className={`px-2 py-1 text-xs border rounded bg-white dark:bg-slate-800 ${
+                    isHinted('word-split-window') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  Split Window
+                </button>
+                <button
+                  type="button"
                   className={`px-2 py-1 text-xs border rounded bg-white dark:bg-slate-800 ${
                     isHinted('word-unlink-previous') ? 'ring-2 ring-sky-500 bg-sky-100 text-sky-700 animate-bounce' : ''
                   }`}

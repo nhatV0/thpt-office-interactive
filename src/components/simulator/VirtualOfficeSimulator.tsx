@@ -179,6 +179,13 @@ export const VirtualOfficeSimulator: React.FC<VirtualOfficeSimulatorProps> = ({
       case 'word-wrap-tight':
         setWordState(s => ({ ...s, wrapStyle: 'tight' }));
         break;
+      case 'word-backstage-open':
+      case 'word-document-properties':
+      case 'word-save-doc':
+      case 'word-show-hide-marks':
+      case 'word-find-replace':
+      case 'word-split-window':
+        break;
 
       // Excel Actions
       case 'excel-format-comma':
@@ -278,6 +285,8 @@ export const VirtualOfficeSimulator: React.FC<VirtualOfficeSimulatorProps> = ({
           }
           return { ...s, slides: updated };
         });
+        break;
+      case 'pp-show-from-beginning':
         break;
       case 'pp-trans-apply-all':
         setPpState(s => ({
