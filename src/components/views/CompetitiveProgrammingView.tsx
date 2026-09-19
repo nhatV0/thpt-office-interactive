@@ -153,14 +153,18 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
     Math.round(((solvedProblemsCount + finishedTheoriesCount) / (totalProblemsCount + courseData.lessons.length)) * 100)
   );
 
-  const isBronze = courseId === 'cp-bronze';
-  const themeBorder = isBronze ? 'border-amber-500/30' : 'border-cyan-500/30';
-  const themeGlow = isBronze ? 'from-amber-500/10 to-orange-500/5' : 'from-cyan-500/10 to-blue-500/5';
-  const themeBadge = isBronze ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30';
-  const themeBtn = isBronze
+  const isAdvanced = courseId === 'cp-bronze';
+  const themeBorder = isAdvanced ? 'border-amber-500/30 dark:border-amber-500/30' : 'border-cyan-500/30 dark:border-cyan-500/30';
+  const themeGlow = isAdvanced
+    ? 'from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent'
+    : 'from-cyan-500/10 via-cyan-500/5 to-transparent dark:from-cyan-500/10 dark:via-cyan-500/5 dark:to-transparent';
+  const themeBadge = isAdvanced
+    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+    : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30';
+  const themeBtn = isAdvanced
     ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold'
     : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold';
-  const themeText = isBronze ? 'text-amber-400' : 'text-cyan-400';
+  const themeText = isAdvanced ? 'text-amber-600 dark:text-amber-400' : 'text-cyan-600 dark:text-cyan-400';
 
   // Copy helpers
   const handleCopyInput = (text: string) => {
@@ -196,13 +200,13 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-white transition-colors duration-200">
       {/* Top Header Navigation */}
-      <header className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={onBackToCourses}
-            className="flex items-center gap-1.5 text-xs lg:text-sm font-medium text-slate-400 hover:text-white px-2.5 py-1.5 rounded-md hover:bg-slate-800 transition-colors border border-slate-800 cursor-pointer"
+            className="flex items-center gap-1.5 text-xs lg:text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-2.5 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-800 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Đổi khóa học</span>
@@ -216,19 +220,19 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sm lg:text-base text-white tracking-tight">{courseData.title}</span>
+                <span className="font-bold text-sm lg:text-base text-slate-900 dark:text-white tracking-tight">{courseData.title}</span>
                 <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full border ${themeBadge}`}>
                   {courseData.levelBadge}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 line-clamp-1 hidden md:block">{courseData.subtitle}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 hidden md:block">{courseData.subtitle}</p>
             </div>
           </div>
         </div>
 
         {/* Global Progress Counters */}
         <div className="flex items-center gap-4 text-xs font-mono">
-          <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-md">
+          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-md">
             <BookOpen className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-slate-400">Lý thuyết:</span>
             <span className={`font-semibold ${themeText}`}>
@@ -236,7 +240,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
             </span>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-md">
+          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-md">
             <Code2 className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-slate-400">Đã giải:</span>
             <span className="font-semibold text-emerald-400">
@@ -247,7 +251,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
           <div className="hidden lg:flex items-center gap-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-md">
             <Flame className="w-3.5 h-3.5 text-orange-400" />
             <span className="text-slate-400">Tiến độ:</span>
-            <span className="font-semibold text-white">{progressPercent}%</span>
+            <span className="font-semibold text-slate-900 dark:text-white">{progressPercent}%</span>
           </div>
         </div>
       </header>
@@ -255,8 +259,8 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
       {/* Main Container */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Sidebar: Lessons Navigation */}
-        <aside className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/50 flex flex-col shrink-0 max-h-[35vh] lg:max-h-[calc(100vh-61px)] overflow-y-auto">
-          <div className="p-3.5 border-b border-slate-800 bg-slate-900/80 sticky top-0 z-10">
+        <aside className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 flex flex-col shrink-0 max-h-[35vh] lg:max-h-[calc(100vh-61px)] overflow-y-auto">
+          <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 sticky top-0 z-10">
             <div className="flex items-center justify-between text-xs font-mono text-slate-400 mb-1">
               <span className="flex items-center gap-1.5 uppercase font-semibold tracking-wider">
                 <Layers className="w-3.5 h-3.5" />
@@ -264,15 +268,15 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
               </span>
               <span>{Math.round((finishedTheoriesCount / courseData.lessons.length) * 100)}%</span>
             </div>
-            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-300 ${isBronze ? 'bg-amber-500' : 'bg-cyan-500'}`}
+                className={`h-full transition-all duration-300 ${isAdvanced ? 'bg-amber-500' : 'bg-cyan-500'}`}
                 style={{ width: `${(finishedTheoriesCount / courseData.lessons.length) * 100}%` }}
               />
             </div>
           </div>
 
-          <div className="divide-y divide-slate-800/60 p-1.5 space-y-1">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/60 p-1.5 space-y-1">
             {courseData.lessons.map((lesson, idx) => {
               const isSelected = idx === selectedLessonIndex;
               const isTheoryDone = completedTheories[lesson.id];
@@ -294,7 +298,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                   <div
                     className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-mono shrink-0 transition-colors ${
                       isSelected
-                        ? isBronze
+                        ? isAdvanced
                           ? 'bg-amber-500 text-slate-950 font-bold'
                           : 'bg-cyan-500 text-slate-950 font-bold'
                         : isTheoryDone
@@ -334,9 +338,9 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
         </aside>
 
         {/* Right Main Workspace */}
-        <main className="flex-1 flex flex-col overflow-y-auto bg-slate-950 max-h-[calc(100vh-61px)]">
+        <main className="flex-1 flex flex-col overflow-y-auto bg-slate-50/50 dark:bg-slate-950 max-h-[calc(100vh-61px)]">
           {/* Lesson Header Banner */}
-          <div className={`p-5 lg:p-7 border-b border-slate-800 bg-gradient-to-r ${themeGlow}`}>
+          <div className={`p-5 lg:p-7 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r ${themeGlow}`}>
             <div className="max-w-5xl mx-auto">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2">
@@ -363,11 +367,11 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 </button>
               </div>
 
-              <h1 className="text-xl lg:text-2xl font-bold text-white tracking-tight mb-2">
+              <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
                 Bài {currentLesson.order}: {currentLesson.title}
               </h1>
 
-              <p className="text-xs lg:text-sm text-slate-300 leading-relaxed max-w-4xl">
+              <p className="text-xs lg:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl">
                 {currentLesson.theorySummary}
               </p>
 
@@ -389,13 +393,13 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
           </div>
 
           {/* Navigation Tabs */}
-          <div className="border-b border-slate-800 bg-slate-900/60 sticky top-0 z-20 px-5 lg:px-8">
+          <div className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 sticky top-0 z-20 px-5 lg:px-8">
             <div className="max-w-5xl mx-auto flex items-center gap-1">
               <button
                 onClick={() => setActiveTab('theory')}
                 className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                   activeTab === 'theory'
-                    ? `${isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
+                    ? `${isAdvanced ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -407,7 +411,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 onClick={() => setActiveTab('problems')}
                 className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                   activeTab === 'problems'
-                    ? `${isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
+                    ? `${isAdvanced ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -420,7 +424,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                   onClick={() => setActiveTab('testcases')}
                   className={`flex items-center gap-2 px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                     activeTab === 'testcases'
-                      ? `${isBronze ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
+                      ? `${isAdvanced ? 'border-amber-500 text-amber-400' : 'border-cyan-500 text-cyan-400'}`
                       : 'border-transparent text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -438,7 +442,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
               {activeTab === 'theory' && (
                 <div className="space-y-6">
                   {/* Theory Title Banner */}
-                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 sm:p-6 shadow-lg">
+                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-sm dark:shadow-lg">
                     <div className="flex items-start gap-4">
                       <div className={`p-3 rounded-xl border shrink-0 ${themeBadge}`}>
                         <FileText className="w-7 h-7" />
@@ -449,7 +453,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                             Giáo trình toán học & thuật toán trực tuyến
                           </span>
                         </div>
-                        <h3 className="text-base sm:text-lg font-bold text-white mb-1">
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1">
                           {currentLesson.title}
                         </h3>
                         <p className="text-xs text-slate-400 leading-relaxed">
@@ -461,7 +465,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
 
                   {/* Full Theory Text with MathRenderer */}
                   {currentLesson.theoryContent ? (
-                    <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 lg:p-9 shadow-inner space-y-4">
+                    <div className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 lg:p-9 shadow-sm dark:shadow-inner space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                         <span className="text-xs font-mono uppercase font-bold text-slate-400 flex items-center gap-2">
                           <BookOpen className="w-4 h-4 text-cyan-400" />
@@ -471,7 +475,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                           Toán học & Lập trình thi đấu
                         </span>
                       </div>
-                      <MathRenderer content={currentLesson.theoryContent} className="text-xs lg:text-sm text-slate-300" />
+                      <MathRenderer content={currentLesson.theoryContent} className="text-xs lg:text-sm text-slate-800 dark:text-slate-300" />
                     </div>
                   ) : (
                     <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-xs">
@@ -489,7 +493,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                       <ul className="space-y-2.5 text-xs text-slate-300">
                         {currentLesson.coreConcepts.map((concept, idx) => (
                           <li key={idx} className="flex items-start gap-2">
-                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${isBronze ? 'bg-amber-400' : 'bg-cyan-400'}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${isAdvanced ? 'bg-amber-400' : 'bg-cyan-400'}`} />
                             <span>{concept}</span>
                           </li>
                         ))}
@@ -705,7 +709,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
       {/* Problem Details & Interactive Per-Test Runner Modal */}
       {selectedProblem && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
@@ -718,7 +722,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 >
                   {selectedProblem.source}
                 </span>
-                <h3 className="text-base sm:text-lg font-bold text-white line-clamp-1">{selectedProblem.title}</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white line-clamp-1">{selectedProblem.title}</h3>
               </div>
 
               <button
