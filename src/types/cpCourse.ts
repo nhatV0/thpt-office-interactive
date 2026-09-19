@@ -1,3 +1,9 @@
+export interface TestCaseItem {
+  id: string; // e.g. "Test 1", "Test 2"
+  input: string; // verbatim test input
+  output: string; // verbatim expected test output
+}
+
 export interface CPProblem {
   id: string; // unique slug e.g. c1-b1-p1-weird-algorithm
   title: string; // problem title
@@ -14,6 +20,7 @@ export interface CPProblem {
   solutionCodeUrl?: string;
   sampleInput?: string; // sample input for manual testing
   sampleOutput?: string; // expected sample output for answer verification
+  testCases?: TestCaseItem[]; // list of tests viewable and testable one by one
   totalTests?: number;
 }
 

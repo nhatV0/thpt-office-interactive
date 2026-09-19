@@ -3,7 +3,6 @@ import {
   Code2,
   BookOpen,
   Download,
-  ExternalLink,
   CheckCircle2,
   XCircle,
   Clock,
@@ -26,6 +25,7 @@ import {
 import { getCPCourseData } from '../../data/cpCoursesData';
 import type { CPLesson, CPProblem } from '../../types/cpCourse';
 import { useLearning } from '../../context/LearningContext';
+import { MathRenderer } from '../common/MathRenderer';
 
 interface CompetitiveProgrammingViewProps {
   courseId: 'cp-bronze' | 'cp-silver';
@@ -45,10 +45,12 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [selectedProblem, setSelectedProblem] = useState<CPProblem | null>(null);
 
-  // User Interactive Testing State in Problem Modal
+  // Active test case index inside modal
+  const [activeTestIndex, setActiveTestIndex] = useState<number>(0);
   const [userInputOutput, setUserInputOutput] = useState<string>('');
   const [testResult, setTestResult] = useState<'idle' | 'passed' | 'failed'>('idle');
   const [hasCopiedInput, setHasCopiedInput] = useState<boolean>(false);
+  const [hasCopiedOutput, setHasCopiedOutput] = useState<boolean>(false);
 
   // Storage keys for progress tracking
   const storageKeyTheory = `cp_${courseId}_theory_done`;
@@ -160,17 +162,27 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
     : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold';
   const themeText = isBronze ? 'text-amber-400' : 'text-cyan-400';
 
-  // Copy sample input handler
+  // Copy helpers
   const handleCopyInput = (text: string) => {
     navigator.clipboard.writeText(text);
     setHasCopiedInput(true);
     setTimeout(() => setHasCopiedInput(false), 2000);
   };
 
-  // Compare user output with expected sample output
+  const handleCopyOutput = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setHasCopiedOutput(true);
+    setTimeout(() => setHasCopiedOutput(false), 2000);
+  };
+
+  // Compare user output with expected test output
   const handleVerifyOutput = () => {
-    if (!selectedProblem || !selectedProblem.sampleOutput) return;
-    const cleanExpected = selectedProblem.sampleOutput.trim().replace(/\r\n/g, '\n');
+    if (!selectedProblem) return;
+    const currentTest = selectedProblem.testCases && selectedProblem.testCases[activeTestIndex]
+      ? selectedProblem.testCases[activeTestIndex]
+      : { output: selectedProblem.sampleOutput || '' };
+
+    const cleanExpected = (currentTest.output || '').trim().replace(/\r\n/g, '\n');
     const cleanUser = userInputOutput.trim().replace(/\r\n/g, '\n');
 
     if (cleanUser === cleanExpected) {
@@ -425,63 +437,45 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
               {/* TAB 1: THEORY ONLINE READER */}
               {activeTab === 'theory' && (
                 <div className="space-y-6">
-                  {/* Theory Action Card */}
-                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-6 relative overflow-hidden shadow-lg">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div className="flex items-start gap-4">
-                        <div className={`p-3 rounded-xl border shrink-0 ${themeBadge}`}>
-                          <FileText className="w-8 h-8" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                              Giáo trình lý thuyết đầy đủ
-                            </span>
-                            <span className="text-xs text-slate-400 font-mono">Đã làm sạch Headnote & Footnote</span>
-                          </div>
-                          <h3 className="text-base lg:text-lg font-bold text-white mb-1">
-                            {currentLesson.theoryPdfFileName}
-                          </h3>
-                          <p className="text-xs text-slate-400">
-                            Nội dung được trích xuất hoàn chỉnh trực tiếp trên web, không cần phụ thuộc trình đọc PDF ngoài.
-                          </p>
-                        </div>
+                  {/* Theory Title Banner */}
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 sm:p-6 shadow-lg">
+                    <div className="flex items-start gap-4">
+                      <div className={`p-3 rounded-xl border shrink-0 ${themeBadge}`}>
+                        <FileText className="w-7 h-7" />
                       </div>
-
-                      <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
-                        <a
-                          href={currentLesson.theoryPdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors border border-slate-700"
-                          title="Mở file PDF gốc"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          <span>Mở PDF Gốc</span>
-                        </a>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+                            Giáo trình toán học & thuật toán trực tuyến
+                          </span>
+                        </div>
+                        <h3 className="text-base sm:text-lg font-bold text-white mb-1">
+                          {currentLesson.title}
+                        </h3>
+                        <p className="text-xs text-slate-400 leading-relaxed">
+                          Toàn bộ định lý, công thức toán học và cấu trúc dữ liệu được chuẩn hóa và hiển thị sắc nét bằng công nghệ kết xuất KaTeX.
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Full Theory Text Area */}
+                  {/* Full Theory Text with MathRenderer */}
                   {currentLesson.theoryContent ? (
-                    <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-6 lg:p-8 space-y-4 shadow-inner">
+                    <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 lg:p-9 shadow-inner space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2 font-mono">
-                          <BookOpen className="w-4 h-4 text-sky-400" />
-                          Nội Dung Bài Học Chi Tiết
-                        </h4>
-                        <span className="text-[11px] font-mono text-slate-500">
-                          {currentLesson.theoryContent.length} ký tự
+                        <span className="text-xs font-mono uppercase font-bold text-slate-400 flex items-center gap-2">
+                          <BookOpen className="w-4 h-4 text-cyan-400" />
+                          Nội dung bài giảng chi tiết
+                        </span>
+                        <span className="text-xs font-mono text-slate-500">
+                          Toán học & Lập trình thi đấu
                         </span>
                       </div>
-                      <div className="prose prose-invert max-w-none text-xs lg:text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-sans select-text">
-                        {currentLesson.theoryContent}
-                      </div>
+                      <MathRenderer content={currentLesson.theoryContent} className="text-xs lg:text-sm text-slate-300" />
                     </div>
                   ) : (
-                    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 text-center text-slate-400 text-xs">
-                      Đang tải tài liệu trực tuyến... Vui lòng mở file PDF gốc ở trên.
+                    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-xs">
+                      Nội dung giáo trình đang được chuẩn bị.
                     </div>
                   )}
 
@@ -570,6 +564,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                           key={prob.id}
                           onClick={() => {
                             setSelectedProblem(prob);
+                            setActiveTestIndex(0);
                             setUserInputOutput('');
                             setTestResult('idle');
                           }}
@@ -593,7 +588,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                                 </span>
                                 {prob.hasTestCases && (
                                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                                    Có Test Chấm ({prob.totalTests || 15})
+                                    {prob.testCases?.length || prob.totalTests || 15} Tests
                                   </span>
                                 )}
                               </div>
@@ -655,7 +650,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                   <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 mb-4">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-2">
                       <Download className="w-4 h-4 text-amber-400" />
-                      Bộ Dữ Liệu Chấm Mẫu & Hướng Dẫn Cài Đặt
+                      Bộ Dữ Liệu Kiểm Thử & Chấm Offline
                     </h3>
                     <p className="text-xs text-slate-300 leading-relaxed">
                       Tải gói test cases (.zip) hoàn chỉnh với input/output chuẩn phục vụ chấm ngoại tuyến trên máy tính cá nhân qua Themis, CMS hoặc script tự động.
@@ -675,7 +670,9 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold">
                                 Gói Chấm Off-line
                               </span>
-                              <span className="text-xs text-slate-400 font-mono">{prob.totalTests || 15} Tests</span>
+                              <span className="text-xs text-slate-400 font-mono">
+                                {prob.testCases?.length || prob.totalTests || 15} Tests
+                              </span>
                             </div>
                             <h4 className="text-sm font-bold text-white mb-2">{prob.title}</h4>
                             <p className="text-xs text-slate-400 mb-4">
@@ -705,10 +702,10 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
         </main>
       </div>
 
-      {/* Problem Details & Interactive Test Modal */}
+      {/* Problem Details & Interactive Per-Test Runner Modal */}
       {selectedProblem && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
@@ -750,32 +747,23 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                 </div>
               </div>
 
-              {/* Full Problem Text (Rendered from PDF without headnotes/footnotes) */}
+              {/* Full Problem Text with MathRenderer */}
               <div className="space-y-2">
-                <h4 className="font-bold text-slate-200 flex items-center justify-between">
-                  <span>Đề bài chi tiết</span>
-                  <a
-                    href={selectedProblem.pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono text-[11px]"
-                  >
-                    <span>Mở PDF</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                <h4 className="font-bold text-slate-200">
+                  Nội dung đề bài
                 </h4>
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 leading-relaxed font-sans whitespace-pre-wrap select-text max-h-72 overflow-y-auto text-xs sm:text-sm">
-                  {selectedProblem.problemContent || selectedProblem.preview}
+                <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 text-slate-300 leading-relaxed font-sans max-h-72 overflow-y-auto text-xs sm:text-sm">
+                  <MathRenderer content={selectedProblem.problemContent || selectedProblem.preview} />
                 </div>
               </div>
 
-              {/* Interactive Test Case Runner */}
-              {selectedProblem.sampleInput && (
-                <div className="space-y-3 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
-                  <div className="flex items-center justify-between">
+              {/* Discrete Test Cases Viewer & Runner */}
+              {selectedProblem.hasTestCases && (
+                <div className="space-y-3 bg-slate-950/90 p-4 sm:p-5 rounded-xl border border-slate-800">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <h4 className="font-bold text-amber-400 flex items-center gap-1.5">
                       <Terminal className="w-4 h-4" />
-                      <span>Kiểm tra lời giải tự động (Test Runner)</span>
+                      <span>Kiểm tra từng Test Case</span>
                     </h4>
                     {selectedProblem.testCaseZipUrl && (
                       <a
@@ -783,88 +771,138 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
                         download
                         className="text-slate-400 hover:text-white flex items-center gap-1 font-mono text-[11px]"
                       >
-                        <Download className="w-3 h-3" />
-                        <span>Tải toàn bộ {selectedProblem.totalTests || 15} tests (.zip)</span>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Tải toàn bộ bộ test (.zip)</span>
                       </a>
                     )}
                   </div>
 
-                  {/* Input Box with One-Click Copy */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                      <span>Dữ liệu đầu vào (Input mẫu):</span>
-                      <button
-                        onClick={() => handleCopyInput(selectedProblem.sampleInput || '')}
-                        className="flex items-center gap-1 text-sky-400 hover:text-sky-300 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
-                      >
-                        {hasCopiedInput ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span className="text-emerald-400">Đã copy!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Copy Input</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-slate-300 font-mono text-xs overflow-x-auto max-h-28">
-                      {selectedProblem.sampleInput}
-                    </pre>
-                  </div>
-
-                  {/* Expected Output Box */}
-                  {selectedProblem.sampleOutput && (
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-mono text-slate-400 block">Kết quả mẫu kỳ vọng (Expected Output):</span>
-                      <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-emerald-400 font-mono text-xs overflow-x-auto max-h-24">
-                        {selectedProblem.sampleOutput}
-                      </pre>
+                  {/* Test selector tabs */}
+                  {selectedProblem.testCases && selectedProblem.testCases.length > 0 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-800">
+                      {selectedProblem.testCases.map((tc, tcIdx) => (
+                        <button
+                          key={tc.id}
+                          onClick={() => {
+                            setActiveTestIndex(tcIdx);
+                            setUserInputOutput('');
+                            setTestResult('idle');
+                          }}
+                          className={`text-xs font-mono px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
+                            activeTestIndex === tcIdx
+                              ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
+                              : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800'
+                          }`}
+                        >
+                          {tc.id}
+                        </button>
+                      ))}
                     </div>
                   )}
 
-                  {/* Output Verification Area */}
-                  <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-                    <label className="text-[11px] font-mono text-slate-300 flex items-center justify-between">
-                      <span>Dán kết quả chạy từ code của bạn vào đây:</span>
-                      {testResult === 'passed' && (
-                        <span className="text-emerald-400 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> CHÍNH XÁC (ACCEPTED)
-                        </span>
-                      )}
-                      {testResult === 'failed' && (
-                        <span className="text-rose-400 font-bold flex items-center gap-1">
-                          <XCircle className="w-3.5 h-3.5" /> SAI KẾT QUẢ (WRONG ANSWER)
-                        </span>
-                      )}
-                    </label>
+                  {/* Current Active Test Display */}
+                  {(() => {
+                    const currentTest = selectedProblem.testCases && selectedProblem.testCases[activeTestIndex]
+                      ? selectedProblem.testCases[activeTestIndex]
+                      : { id: 'Test Mẫu', input: selectedProblem.sampleInput || '', output: selectedProblem.sampleOutput || '' };
 
-                    <div className="flex gap-2">
-                      <textarea
-                        rows={2}
-                        value={userInputOutput}
-                        onChange={e => {
-                          setUserInputOutput(e.target.value);
-                          setTestResult('idle');
-                        }}
-                        placeholder="Dán output chương trình của bạn vào đây để kiểm tra..."
-                        className="flex-1 bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-700"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleVerifyOutput}
-                        className={`px-4 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                          userInputOutput.trim() ? themeBtn : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                        }`}
-                        disabled={!userInputOutput.trim()}
-                      >
-                        <Play className="w-3.5 h-3.5" />
-                        <span>Kiểm Tra</span>
-                      </button>
-                    </div>
-                  </div>
+                    return (
+                      <div className="space-y-3 pt-1">
+                        {/* Input Box with One-Click Copy */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                            <span className="font-bold text-slate-300">Dữ liệu Input ({currentTest.id}):</span>
+                            <button
+                              onClick={() => handleCopyInput(currentTest.input)}
+                              className="flex items-center gap-1 text-sky-400 hover:text-sky-300 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                            >
+                              {hasCopiedInput ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  <span className="text-emerald-400">Đã copy!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Copy Input</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-slate-200 font-mono text-xs overflow-x-auto max-h-32 select-all">
+                            {currentTest.input}
+                          </pre>
+                        </div>
+
+                        {/* Expected Output Box with Copy Option */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                            <span className="font-bold text-emerald-400">Đáp án Output kỳ vọng:</span>
+                            <button
+                              onClick={() => handleCopyOutput(currentTest.output)}
+                              className="flex items-center gap-1 text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                            >
+                              {hasCopiedOutput ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  <span className="text-emerald-400">Đã copy!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Copy Output</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <pre className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-emerald-400 font-mono text-xs overflow-x-auto max-h-28 select-all">
+                            {currentTest.output}
+                          </pre>
+                        </div>
+
+                        {/* Output Verification Area */}
+                        <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                          <label className="text-[11px] font-mono text-slate-300 flex items-center justify-between">
+                            <span>Dán kết quả chạy từ chương trình của bạn để kiểm tra:</span>
+                            {testResult === 'passed' && (
+                              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> CHÍNH XÁC (ACCEPTED)
+                              </span>
+                            )}
+                            {testResult === 'failed' && (
+                              <span className="text-rose-400 font-bold flex items-center gap-1">
+                                <XCircle className="w-3.5 h-3.5" /> SAI KẾT QUẢ (WRONG ANSWER)
+                              </span>
+                            )}
+                          </label>
+
+                          <div className="flex gap-2">
+                            <textarea
+                              rows={2}
+                              value={userInputOutput}
+                              onChange={e => {
+                                setUserInputOutput(e.target.value);
+                                setTestResult('idle');
+                              }}
+                              placeholder="Dán output của bạn vào đây..."
+                              className="flex-1 bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-700"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleVerifyOutput}
+                              className={`px-4 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                userInputOutput.trim() ? themeBtn : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                              }`}
+                              disabled={!userInputOutput.trim()}
+                            >
+                              <Play className="w-3.5 h-3.5" />
+                              <span>Kiểm Tra</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
