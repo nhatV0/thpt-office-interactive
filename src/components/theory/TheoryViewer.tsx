@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { MicroTheoryCard } from '../../types/curriculum';
-import { BookOpen, Lightbulb, KeyRound, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { CHECKPOINT_QUESTIONS_MAP } from '../../data/theoryCheckpointQuestions';
+import { BookOpen, Lightbulb, KeyRound, CheckCircle2, ChevronRight, ChevronLeft, HelpCircle, XCircle } from 'lucide-react';
 
 interface TheoryViewerProps {
   theories: MicroTheoryCard[];
@@ -14,8 +15,15 @@ export const TheoryViewer: React.FC<TheoryViewerProps> = ({
   isCompleted = false
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const currentTheory = theories[currentIndex];
-
+  const [checkpointAnswers, setCheckpointAnswers] = useState<Record<string, number>>({});
+  const [showExplanations, setShowExplanations] = useState<Record<string, boolean>>({});
+  const rawTheory = theories[currentIndex];
+  const currentTheory = rawTheory
+    ? {
+        ...rawTheory,
+        checkpointQuestion: rawTheory.checkpointQuestion || CHECKPOINT_QUESTIONS_MAP[rawTheory.id]
+      }
+    : undefined;
   const handleNext = () => {
     if (currentIndex + 1 < theories.length) {
       setCurrentIndex(idx => idx + 1);
@@ -123,6 +131,73 @@ export const TheoryViewer: React.FC<TheoryViewerProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Checkpoint Review Question at the end of this theory card */}
+            {currentTheory.checkpointQuestion && (
+              <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                  <h5 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    Câu Hỏi Củng Cố Kiến Thức (Checkpoint)
+                  </h5>
+                </div>
+
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 pl-6">
+                  {currentTheory.checkpointQuestion.question}
+                </p>
+
+                <div className="space-y-2 pl-6 pt-1">
+                  {currentTheory.checkpointQuestion.options.map((opt: string, oIdx: number) => {
+                    const selected = checkpointAnswers[currentTheory.id] === oIdx;
+                    const isCorrect = currentTheory.checkpointQuestion!.correctIndex === oIdx;
+                    const isAnswered = checkpointAnswers[currentTheory.id] !== undefined;
+
+                    let btnClass = 'border-slate-200 dark:border-slate-800 hover:border-sky-400 bg-slate-50/50 dark:bg-slate-800/40 text-slate-800 dark:text-slate-200';
+
+                    if (isAnswered) {
+                      if (isCorrect) {
+                        btnClass = 'border-emerald-500 bg-emerald-100/70 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-200 font-semibold';
+                      } else if (selected && !isCorrect) {
+                        btnClass = 'border-rose-500 bg-rose-100/70 dark:bg-rose-950/80 text-rose-900 dark:text-rose-200 font-semibold';
+                      } else {
+                        btnClass = 'opacity-50 border-slate-200 dark:border-slate-800 text-slate-500';
+                      }
+                    } else if (selected) {
+                      btnClass = 'border-sky-500 bg-sky-50 dark:bg-sky-950 text-sky-900 dark:text-sky-100 font-medium';
+                    }
+
+                    return (
+                      <button
+                        key={oIdx}
+                        type="button"
+                        disabled={isAnswered}
+                        onClick={() => {
+                          setCheckpointAnswers(prev => ({ ...prev, [currentTheory.id]: oIdx }));
+                          setShowExplanations(prev => ({ ...prev, [currentTheory.id]: true }));
+                        }}
+                        className={`w-full text-left p-2.5 rounded-xl border text-xs flex items-center justify-between transition-all cursor-pointer ${btnClass}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase">
+                            {String.fromCharCode(65 + oIdx)}
+                          </span>
+                          <span>{opt}</span>
+                        </div>
+                        {isAnswered && isCorrect && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                        {isAnswered && selected && !isCorrect && <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {showExplanations[currentTheory.id] && (
+                  <div className="ml-6 p-3 rounded-xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-900 text-[11px] text-sky-900 dark:text-sky-200">
+                    <span className="font-bold block mb-0.5">Giải thích:</span>
+                    <span>{currentTheory.checkpointQuestion.explanation}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Navigation Buttons */}

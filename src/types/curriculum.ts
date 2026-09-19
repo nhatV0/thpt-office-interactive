@@ -1,5 +1,12 @@
 export type ModuleType = 'word' | 'excel' | 'powerpoint';
 
+export interface TheoryReviewQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
 export interface MicroTheoryCard {
   id: string;
   title: string;
@@ -7,6 +14,7 @@ export interface MicroTheoryCard {
   keyPoints: string[];
   shortcut?: string;
   examTip?: string;
+  checkpointQuestion?: TheoryReviewQuestion;
 }
 
 export interface SimulatorTask {
