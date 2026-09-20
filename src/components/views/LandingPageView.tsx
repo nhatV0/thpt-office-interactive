@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../../context/AuthContext';
 import {
   Sparkles,
   FileText,
@@ -12,7 +13,8 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  LogIn
+  LogIn,
+  LayoutGrid,
 } from 'lucide-react';
 
 interface LandingPageViewProps {
@@ -28,6 +30,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onToggleDarkMode,
   onExploreCourses
 }) => {
+  const { currentUser } = useAuth();
   return (
     <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-sky-500 selection:text-white transition-colors duration-200">
       {/* Top Sticky Header: Max 64px, one row */}
@@ -63,14 +66,25 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
           </button>
 
-          <button
-            type="button"
-            onClick={onLoginClick}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-xs cursor-pointer transition-all active:scale-[0.98]"
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Đăng Nhập</span>
-          </button>
+          {currentUser ? (
+            <button
+              type="button"
+              onClick={onExploreCourses}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-xs cursor-pointer transition-all active:scale-[0.98]"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Khóa Học Của Bạn</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onLoginClick}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-xs cursor-pointer transition-all active:scale-[0.98]"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Đăng Nhập</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -97,18 +111,20 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               onClick={onExploreCourses}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-sm cursor-pointer transition-all active:scale-[0.98]"
             >
-              <span>Khám Phá Khóa Học</span>
+              <span>{currentUser ? 'Vào Màn Hình Khóa Học' : 'Khám Phá Khóa Học'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
-            <button
-              type="button"
-              onClick={onLoginClick}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-800 dark:text-slate-200 font-bold text-sm shadow-xs cursor-pointer transition-all active:scale-[0.98]"
-            >
-              <LogIn className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-              <span>Vào Lớp Học</span>
-            </button>
+            {!currentUser && (
+              <button
+                type="button"
+                onClick={onLoginClick}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-800 dark:text-slate-200 font-bold text-sm shadow-xs cursor-pointer transition-all active:scale-[0.98]"
+              >
+                <LogIn className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                <span>Vào Lớp Học</span>
+              </button>
+            )}
           </div>
         </section>
 

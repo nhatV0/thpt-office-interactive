@@ -37,18 +37,21 @@ const AppContent: React.FC = () => {
     ? `thpt_office_last_view_state_${currentUser.username}`
     : 'thpt_office_last_view_state_guest';
 
-  const [viewMode, setViewMode] = useState<'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics' | 'ic3'>(() => {
+  const [viewMode, setViewMode] = useState<'landing' | 'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics' | 'ic3'>(() => {
+    // Học viên khi đăng nhập thành công sẽ luôn ở màn hình landing page
+    if (currentUser && currentUser.role === 'student') {
+      return 'landing';
+    }
     try {
       const saved = localStorage.getItem(sessionStateKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // If user is student or has explicit preference, load saved view; default is always 'courses'
         if (parsed.viewMode) return parsed.viewMode;
       }
     } catch {
       // ignore
     }
-    return 'courses';
+    return 'landing';
   });
 
   const [cpState, setCpState] = useState<{ lessonIndex: number; tab: 'theory' | 'practice' | 'summary'; problemId?: string }>(() => {
@@ -105,7 +108,6 @@ const AppContent: React.FC = () => {
   });
   const [isSummaryOpen, setIsSummaryOpen] = useState<boolean>(false);
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
-  const [isGuestExploring, setIsGuestExploring] = useState<boolean>(false);
 
   useEffect(() => {
     if (darkMode) {
@@ -138,7 +140,7 @@ const AppContent: React.FC = () => {
     }
   }, [viewMode, activeCourseId, activeModuleId, activeLessonId, cpState, roboticsLessonId, ic3TopicId, sessionStateKey]);
   // Unauthenticated user: show LandingPage by default; show LoginPage when user clicks login or modal
-  if (!currentUser && !isGuestExploring) {
+  if (!currentUser) {
     if (showLoginModal) {
       return (
         <LoginPage
@@ -152,8 +154,7 @@ const AppContent: React.FC = () => {
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(prev => !prev)}
         onExploreCourses={() => {
-          setViewMode('courses');
-          setIsGuestExploring(true);
+          setShowLoginModal(true);
         }}
       />
     );
@@ -219,7 +220,7 @@ const AppContent: React.FC = () => {
       <HeaderNav
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(prev => !prev)}
-        onGoHome={() => setViewMode('courses')}
+        onGoHome={() => setViewMode('landing')}
         onOpenCourses={() => setViewMode('courses')}
         onOpenCurriculum={() => setViewMode('curriculum')}
         onOpenDashboard={() => setViewMode('dashboard')}
@@ -231,7 +232,14 @@ const AppContent: React.FC = () => {
 
       {/* Main View Area */}
       <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden min-h-0">
-        {viewMode === 'courses' ? (
+        {viewMode === 'landing' ? (
+          <LandingPageView
+            onLoginClick={() => setViewMode('courses')}
+            darkMode={darkMode}
+            onToggleDarkMode={() => setDarkMode(prev => !prev)}
+            onExploreCourses={() => setViewMode('courses')}
+          />
+        ) : viewMode === 'courses' ? (
           <CourseSelectionView
             onSelectCourse={handleSelectCourse}
             onOpenTeacherDashboard={() => setViewMode('dashboard')}

@@ -25,7 +25,7 @@ interface HeaderNavProps {
   onOpenDashboard: () => void;
   onOpenPractice: () => void;
   onOpenLogin: () => void;
-  currentView: 'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics' | 'ic3';
+  currentView: 'landing' | 'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics' | 'ic3';
   activeCourseId?: string;
 }
 export const HeaderNav: React.FC<HeaderNavProps> = ({
