@@ -15,6 +15,8 @@ import { LoginPage } from './components/views/LoginPage';
 import { CompetitiveProgrammingView } from './components/views/CompetitiveProgrammingView';
 import { RoboticsLearningView } from './components/views/RoboticsLearningView';
 import type { RoboticsCourseId } from './types/roboticsCourse';
+import { IC3LearningView } from './components/views/IC3LearningView';
+import type { IC3CourseId } from './types/ic3Course';
 import { LandingPageView } from './components/views/LandingPageView';
 const AppContent: React.FC = () => {
   const {
@@ -35,7 +37,7 @@ const AppContent: React.FC = () => {
     ? `thpt_office_last_view_state_${currentUser.username}`
     : 'thpt_office_last_view_state_guest';
 
-  const [viewMode, setViewMode] = useState<'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics'>(() => {
+  const [viewMode, setViewMode] = useState<'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics' | 'ic3'>(() => {
     try {
       const saved = localStorage.getItem(sessionStateKey);
       if (saved) {
@@ -72,6 +74,18 @@ const AppContent: React.FC = () => {
       if (saved) {
         const parsed = JSON.parse(saved);
         return parsed.roboticsLessonId || '';
+      }
+    } catch {
+      // ignore
+    }
+    return '';
+  });
+  const [ic3TopicId, setIc3TopicId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(sessionStateKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.ic3TopicId || '';
       }
     } catch {
       // ignore
@@ -115,13 +129,14 @@ const AppContent: React.FC = () => {
         cpLessonIndex: cpState.lessonIndex,
         cpTab: cpState.tab,
         cpProblemId: cpState.problemId,
-        roboticsLessonId
+        roboticsLessonId,
+        ic3TopicId
       };
       localStorage.setItem(sessionStateKey, JSON.stringify(statePayload));
     } catch {
       // ignore
     }
-  }, [viewMode, activeCourseId, activeModuleId, activeLessonId, cpState, roboticsLessonId, sessionStateKey]);
+  }, [viewMode, activeCourseId, activeModuleId, activeLessonId, cpState, roboticsLessonId, ic3TopicId, sessionStateKey]);
   // Unauthenticated user: show LandingPage by default; show LoginPage when user clicks login or modal
   if (!currentUser && !isGuestExploring) {
     if (showLoginModal) {
@@ -155,6 +170,8 @@ const AppContent: React.FC = () => {
       setViewMode('robotics');
     } else if (course.kind === 'practice') {
       setViewMode('practice');
+    } else if (course.kind === 'ic3') {
+      setViewMode('ic3');
     } else if (course.moduleId) {
       setActiveModuleId(course.moduleId);
       setActiveLessonId(`${course.moduleId}-lesson-1`);
@@ -234,6 +251,13 @@ const AppContent: React.FC = () => {
             onBackToCourses={() => setViewMode('courses')}
             initialLessonId={roboticsLessonId}
             onLessonChange={setRoboticsLessonId}
+          />
+        ) : viewMode === 'ic3' ? (
+          <IC3LearningView
+            courseId={(activeCourseId === 'ic3-level-1' || activeCourseId === 'ic3-level-2' || activeCourseId === 'ic3-level-3') ? (activeCourseId as IC3CourseId) : 'ic3-level-1'}
+            onBackToCourses={() => setViewMode('courses')}
+            initialTopicId={ic3TopicId}
+            onTopicChange={setIc3TopicId}
           />
         ) : viewMode === 'practice' ? (
           <WordPracticeReviewView

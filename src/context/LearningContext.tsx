@@ -275,6 +275,19 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return { completed: 0, total: courseDef.totalUnits || 8, percentage: 0 };
       }
     }
+    if (courseDef.kind === 'ic3') {
+      try {
+        const storageKey = `ic3_${courseId}_quiz_done`;
+        const doneMap = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        const completed = Object.values(doneMap).filter(Boolean).length;
+        const total = courseDef.totalUnits || 7;
+        const percentage = Math.min(100, Math.round((completed / total) * 100));
+        return { completed, total, percentage };
+      } catch {
+        return { completed: 0, total: courseDef.totalUnits || 7, percentage: 0 };
+      }
+    }
+
 
     if (courseDef.kind === 'curriculum' && courseDef.moduleId) {
       const mod = CURRICULUM_DATA[courseDef.moduleId];

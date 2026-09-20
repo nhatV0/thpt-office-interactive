@@ -23,7 +23,7 @@ interface HeaderNavProps {
   onOpenDashboard: () => void;
   onOpenPractice: () => void;
   onOpenLogin: () => void;
-  currentView: 'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics';
+  currentView: 'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics' | 'ic3';
   activeCourseId?: string;
 }
 export const HeaderNav: React.FC<HeaderNavProps> = ({
@@ -105,6 +105,23 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           {currentView === 'dashboard' && (
             <span className="font-bold text-indigo-600 dark:text-indigo-400">
               Quản Lý Học Viên
+            </span>
+          )}
+          {currentView === 'programming' && (
+            <span className="font-bold text-cyan-600 dark:text-cyan-400">
+              {currentCourse?.title || 'Lập Trình Thi Đấu CP'}
+            </span>
+          )}
+
+          {currentView === 'robotics' && (
+            <span className="font-bold text-orange-600 dark:text-orange-400">
+              {currentCourse?.title || 'Khóa Học Robotics VEX IQ'}
+            </span>
+          )}
+
+          {currentView === 'ic3' && (
+            <span className="font-bold text-cyan-600 dark:text-cyan-400">
+              {currentCourse?.title || 'Chứng Chỉ IC3 GS6'}
             </span>
           )}
         </div>

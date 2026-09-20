@@ -154,6 +154,51 @@ export const COURSES_REGISTRY: CourseDefinition[] = [
     unitLabel: 'bài học',
     durationHours: 36,
     tags: ['Gyro Sensor', 'Inertial Heading', 'Servo ClawBot', 'VEX Controller', 'Thuật toán mê cung', 'Đồ án VEX IQ']
+  },
+  {
+    id: 'ic3-level-1',
+    title: 'IC3 GS6 Level 1: Nền Tảng Công Nghệ Số',
+    subtitle: 'Khái niệm căn bản, công dân số, quản lý thông tin & an toàn số',
+    description: 'Khóa học chuẩn quốc tế IC3 Digital Literacy GS6 Cấp độ 1 do IIG phát hành. Đo lường kiến thức nền tảng về phần cứng, hệ điều hành Windows, Internet/Wi-Fi, bản quyền nội dung và bảo vệ thông tin.',
+    kind: 'ic3',
+    category: 'ic3',
+    badgeName: 'IC3 GS6 Level 1',
+    accentColor: 'cyan',
+    accentClass: 'from-cyan-500 to-blue-600',
+    totalUnits: 7,
+    unitLabel: 'chủ đề',
+    durationHours: 16,
+    tags: ['IC3 GS6', 'Căn bản công nghệ', 'Công dân số', 'Quản lý thông tin', 'Sáng tạo nội dung', 'An toàn số']
+  },
+  {
+    id: 'ic3-level-2',
+    title: 'IC3 GS6 Level 2: Kỹ Năng Kỹ Thuật Số Thực Hành',
+    subtitle: 'Thực hành hệ điều hành, máy in, đám mây, Excel & bảo mật giao dịch',
+    description: 'Khóa học chuẩn quốc tế IC3 Digital Literacy GS6 Cấp độ 2. Yêu cầu năng lực làm việc thực tế: Cài đặt Windows 10 & máy in, điện toán đám mây, quản lý & nén tập tin, bảng tính Excel nâng cao và phòng chống lừa đảo Phishing.',
+    kind: 'ic3',
+    category: 'ic3',
+    badgeName: 'IC3 GS6 Level 2',
+    accentColor: 'indigo',
+    accentClass: 'from-indigo-500 to-purple-600',
+    totalUnits: 7,
+    unitLabel: 'chủ đề',
+    durationHours: 16,
+    tags: ['IC3 GS6', 'Windows 10 Settings', 'Máy in', 'Đám mây', 'Excel', 'BitLocker', 'Phòng chống Phishing']
+  },
+  {
+    id: 'ic3-level-3',
+    title: 'IC3 GS6 Level 3: Làm Chủ Công Nghệ & Dự Án Số',
+    subtitle: 'Xử lý sự cố chuyên sâu, cấp phép phần mềm, quản trị dự án & an ninh mạng',
+    description: 'Khóa học chuẩn quốc tế IC3 Digital Literacy GS6 Cấp độ 3. Xác nhận năng lực chuyên gia số: Khắc phục sự cố phần cứng/phần mềm, mô hình bản quyền SaaS/OEM, khả năng tiếp cận (Accessibility), quyền sở hữu trí tuệ (IP) và quản trị dự án số.',
+    kind: 'ic3',
+    category: 'ic3',
+    badgeName: 'IC3 GS6 Level 3',
+    accentColor: 'rose',
+    accentClass: 'from-pink-500 to-rose-600',
+    totalUnits: 7,
+    unitLabel: 'chủ đề',
+    durationHours: 16,
+    tags: ['IC3 GS6', 'Xử lý sự cố BSOD', 'Cấp phép SaaS', 'Accessibility', 'Sở hữu trí tuệ', 'Dự án số', 'An ninh số']
   }
 ];
 

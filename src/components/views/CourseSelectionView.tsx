@@ -47,7 +47,7 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
     ? currentUser.allowedCourses
     : ['word'];
 
-  const [activeFilter, setActiveFilter] = useState<'all' | 'my-courses' | 'office' | 'practice' | 'programming' | 'robotics'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'my-courses' | 'office' | 'practice' | 'programming' | 'robotics' | 'ic3'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const isCourseUnlocked = (courseId: string) => allowedCourses.includes(courseId);
@@ -74,6 +74,10 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
         return <Cpu className="w-6 h-6 text-white" />;
       case 'robotics-advanced':
         return <Sparkles className="w-6 h-6 text-white" />;
+      case 'ic3-level-1':
+      case 'ic3-level-2':
+      case 'ic3-level-3':
+        return <Award className="w-6 h-6 text-white" />;
       default:
         return <BookOpen className="w-6 h-6 text-white" />;
     }
@@ -103,6 +107,9 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
       }
       if (activeFilter === 'robotics') {
         return course.category === 'robotics';
+      }
+      if (activeFilter === 'ic3') {
+        return course.category === 'ic3';
       }
       return true;
     });
@@ -335,6 +342,17 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
             }`}
           >
             Robotics VEX IQ (3)
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFilter('ic3')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              activeFilter === 'ic3'
+                ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Chứng Chỉ IC3 GS6 (3)
           </button>
         </div>
 

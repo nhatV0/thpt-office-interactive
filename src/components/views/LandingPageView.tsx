@@ -116,14 +116,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <section id="chuong-trinh" className="py-12 px-4 sm:px-8 max-w-6xl mx-auto">
           <div className="mb-8 text-center sm:text-left">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
-              Lộ trình 3 phân hệ
+              Lộ trình 4 phân hệ
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
               Chương trình đào tạo đa năng
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Bento Card 1: MOS 2019 */}
             <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:border-sky-500/40 transition-all">
               <div>
@@ -193,6 +193,29 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/60">VEXcode IQ</span>
                 <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/60">Barem Sa Bàn</span>
                 <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/60">Cơ điện tử STEM</span>
+              </div>
+            </div>
+            {/* Bento Card 4: IC3 GS6 */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:border-cyan-500/40 transition-all">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 flex items-center justify-center mb-4">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
+                  IC3 GS6 (3 CẤP ĐỘ)
+                </span>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-2 mb-2">
+                  Chứng Chỉ Số Quốc Tế
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Trọn bộ 3 cấp độ (Level 1, Level 2, Level 3) qua 7 chủ đề cốt lõi. Tích hợp giáo trình PDF chuẩn IIG, thẻ tóm tắt kiến thức và ngân hàng trắc nghiệm chuẩn hóa.
+                </p>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/60">Giáo trình IIG</span>
+                <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/60">Flashcards</span>
+                <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/60">Trắc nghiệm IC3</span>
               </div>
             </div>
           </div>

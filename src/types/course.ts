@@ -1,8 +1,8 @@
 import type { ModuleType } from './curriculum';
 
-export type CourseKind = 'curriculum' | 'practice' | 'programming' | 'robotics';
-export type CourseCategory = 'office' | 'practice' | 'advanced' | 'programming' | 'robotics';
-export type CourseAccentColor = 'sky' | 'emerald' | 'rose' | 'indigo' | 'amber' | 'cyan' | 'orange';
+export type CourseKind = 'curriculum' | 'practice' | 'programming' | 'robotics' | 'ic3';
+export type CourseCategory = 'office' | 'practice' | 'advanced' | 'programming' | 'robotics' | 'ic3';
+export type CourseAccentColor = 'sky' | 'emerald' | 'rose' | 'indigo' | 'amber' | 'cyan' | 'orange' | 'purple' | 'teal';
 
 export interface CourseDefinition {
   id: string; // e.g. 'word', 'excel', 'powerpoint', 'word-practice'
