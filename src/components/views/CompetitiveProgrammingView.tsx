@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import {
   Code2,
   BookOpen,
@@ -31,26 +31,33 @@ import { triggerConfetti, playRewardChime } from '../../utils/celebration';
 interface CompetitiveProgrammingViewProps {
   courseId: 'cp-basic' | 'cp-bronze' | 'cp-silver';
   onBackToCourses: () => void;
+  initialLessonIndex?: number;
+  initialTab?: 'theory' | 'practice' | 'summary';
+  initialProblemId?: string;
+  onStateChange?: (state: { lessonIndex: number; tab: 'theory' | 'practice' | 'summary'; problemId?: string }) => void;
 }
-
 export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProps> = ({
   courseId,
-  onBackToCourses
+  onBackToCourses,
+  initialLessonIndex,
+  initialTab,
+  initialProblemId,
+  onStateChange
 }) => {
   const courseData = getCPCourseData(courseId);
   const { addXP } = useLearning();
 
-  const [selectedLessonIndex, setSelectedLessonIndex] = useState<number>(0);
+  const [selectedLessonIndex, setSelectedLessonIndex] = useState<number>(initialLessonIndex ?? 0);
   // 3-step navigation inspired by Word/Excel/PowerPoint: theory -> practice -> summary
-  const [currentTab, setCurrentTab] = useState<'theory' | 'practice' | 'summary'>('theory');
+  const [currentTab, setCurrentTab] = useState<'theory' | 'practice' | 'summary'>(initialTab || 'theory');
 
   // Search & filter in Practice Workbench
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [sourceFilter, setSourceFilter] = useState<string>('all');
 
   // Selected problem inside Practice Workbench
-  const [selectedProblemId, setSelectedProblemId] = useState<string>('');
-
+  const [selectedProblemId, setSelectedProblemId] = useState<string>(initialProblemId || '');
   // Per-test runner state
   const [activeTestIndex, setActiveTestIndex] = useState<number>(0);
   const [userInputOutput, setUserInputOutput] = useState<string>('');
@@ -80,29 +87,18 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
     }
   });
 
-  if (!courseData) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
-        <AlertCircle className="w-12 h-12 text-rose-500 mb-4" />
-        <h2 className="text-xl font-bold mb-2">Không tìm thấy khóa học</h2>
-        <button
-          onClick={onBackToCourses}
-          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
-        >
-          Quay lại danh sách khóa học
-        </button>
-      </div>
-    );
-  }
-
-  const currentLesson: CPLesson = courseData.lessons[selectedLessonIndex] || courseData.lessons[0];
+  const currentLesson: CPLesson | undefined = courseData?.lessons[selectedLessonIndex] || courseData?.lessons[0];
 
   // Filter problems for current lesson
+  // Filter problems for current lesson with deferred search query
   const filteredProblems = useMemo(() => {
+    if (!currentLesson) return [];
+    const query = deferredSearchQuery.trim().toLowerCase();
     return currentLesson.problems.filter(p => {
       const matchSearch =
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.source.toLowerCase().includes(searchQuery.toLowerCase());
+        !query ||
+        p.title.toLowerCase().includes(query) ||
+        p.source.toLowerCase().includes(query);
       const matchSource =
         sourceFilter === 'all' ||
         (sourceFilter === 'Thuật toán' && p.source === 'Thuật toán') ||
@@ -111,8 +107,7 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
         (sourceFilter === 'Chuyên Tin' && p.source === 'Chuyên Tin');
       return matchSearch && matchSource;
     });
-  }, [currentLesson, searchQuery, sourceFilter]);
-
+  }, [currentLesson, deferredSearchQuery, sourceFilter]);
   // Set default selected problem when lesson or filter changes
   useEffect(() => {
     if (filteredProblems.length > 0) {
@@ -126,17 +121,53 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
     setActiveTestIndex(0);
     setUserInputOutput('');
     setTestResult('idle');
-  }, [currentLesson.id, filteredProblems, selectedProblemId]);
+  }, [currentLesson?.id, filteredProblems, selectedProblemId]);
 
+  // Sync state changes with parent for persistence
+  useEffect(() => {
+    onStateChange?.({
+      lessonIndex: selectedLessonIndex,
+      tab: currentTab,
+      problemId: selectedProblemId
+    });
+  }, [selectedLessonIndex, currentTab, selectedProblemId, onStateChange]);
   const activeProblem: CPProblem | undefined = useMemo(() => {
+    if (!currentLesson) return undefined;
     return currentLesson.problems.find(p => p.id === selectedProblemId) || filteredProblems[0];
-  }, [currentLesson.problems, selectedProblemId, filteredProblems]);
+  }, [currentLesson, selectedProblemId, filteredProblems]);
 
   const activeProblemIndex = useMemo(() => {
     if (!activeProblem) return -1;
     return filteredProblems.findIndex(p => p.id === activeProblem.id);
   }, [filteredProblems, activeProblem]);
 
+  const totalProblemsCount = useMemo(() => {
+    if (!courseData) return 0;
+    return courseData.lessons.reduce((acc: number, l: CPLesson) => acc + l.problems.length, 0);
+  }, [courseData]);
+
+  const solvedProblemsCount = useMemo(() => {
+    return Object.values(completedProblems).filter(Boolean).length;
+  }, [completedProblems]);
+
+  const finishedTheoriesCount = useMemo(() => {
+    return Object.values(completedTheories).filter(Boolean).length;
+  }, [completedTheories]);
+
+  if (!courseData || !currentLesson) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
+        <AlertCircle className="w-12 h-12 text-rose-500 mb-4" />
+        <h2 className="text-xl font-bold mb-2">Không tìm thấy khóa học</h2>
+        <button
+          onClick={onBackToCourses}
+          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+        >
+          Quay lại danh sách khóa học
+        </button>
+      </div>
+    );
+  }
   const handleToggleTheoryDone = (lessonId: string) => {
     setCompletedTheories(prev => {
       const updated = { ...prev, [lessonId]: !prev[lessonId] };
@@ -171,18 +202,6 @@ export const CompetitiveProgrammingView: React.FC<CompetitiveProgrammingViewProp
       return updated;
     });
   };
-
-  const totalProblemsCount = useMemo(() => {
-    return courseData.lessons.reduce((acc: number, l: CPLesson) => acc + l.problems.length, 0);
-  }, [courseData]);
-
-  const solvedProblemsCount = useMemo(() => {
-    return Object.values(completedProblems).filter(Boolean).length;
-  }, [completedProblems]);
-
-  const finishedTheoriesCount = useMemo(() => {
-    return Object.values(completedTheories).filter(Boolean).length;
-  }, [completedTheories]);
 
   const progressPercent = Math.min(
     100,

@@ -11,7 +11,7 @@ interface StepRoadmapProps {
   steps: StepItem[];
 }
 
-export const StepRoadmap: React.FC<StepRoadmapProps> = ({ steps }) => {
+export const StepRoadmap: React.FC<StepRoadmapProps> = React.memo(({ steps }) => {
   if (!steps || steps.length === 0) return null;
 
   return (
@@ -53,4 +53,4 @@ export const StepRoadmap: React.FC<StepRoadmapProps> = ({ steps }) => {
       </div>
     </div>
   );
-};
+});

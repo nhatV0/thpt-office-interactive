@@ -15,6 +15,7 @@ import { LoginPage } from './components/views/LoginPage';
 import { CompetitiveProgrammingView } from './components/views/CompetitiveProgrammingView';
 import { RoboticsLearningView } from './components/views/RoboticsLearningView';
 import type { RoboticsCourseId } from './types/roboticsCourse';
+import { LandingPageView } from './components/views/LandingPageView';
 const AppContent: React.FC = () => {
   const {
     activeCourseId,
@@ -28,7 +29,54 @@ const AppContent: React.FC = () => {
   } = useLearning();
 
   const { currentUser } = useAuth();
-  const [viewMode, setViewMode] = useState<'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics'>('courses');
+
+  // Persistent view state key per user
+  const sessionStateKey = currentUser?.username
+    ? `thpt_office_last_view_state_${currentUser.username}`
+    : 'thpt_office_last_view_state_guest';
+
+  const [viewMode, setViewMode] = useState<'courses' | 'curriculum' | 'lesson' | 'dashboard' | 'practice' | 'programming' | 'robotics'>(() => {
+    try {
+      const saved = localStorage.getItem(sessionStateKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.viewMode) return parsed.viewMode;
+      }
+    } catch {
+      // ignore
+    }
+    return 'courses';
+  });
+
+  const [cpState, setCpState] = useState<{ lessonIndex: number; tab: 'theory' | 'practice' | 'summary'; problemId?: string }>(() => {
+    try {
+      const saved = localStorage.getItem(sessionStateKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          lessonIndex: parsed.cpLessonIndex ?? 0,
+          tab: parsed.cpTab ?? 'theory',
+          problemId: parsed.cpProblemId
+        };
+      }
+    } catch {
+      // ignore
+    }
+    return { lessonIndex: 0, tab: 'theory' };
+  });
+
+  const [roboticsLessonId, setRoboticsLessonId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(sessionStateKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.roboticsLessonId || '';
+      }
+    } catch {
+      // ignore
+    }
+    return '';
+  });
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
       const savedTheme = localStorage.getItem('thpt_office_theme');
@@ -40,8 +88,9 @@ const AppContent: React.FC = () => {
       return false;
     }
   });
-
   const [isSummaryOpen, setIsSummaryOpen] = useState<boolean>(false);
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [isGuestExploring, setIsGuestExploring] = useState<boolean>(false);
 
   useEffect(() => {
     if (darkMode) {
@@ -49,19 +98,61 @@ const AppContent: React.FC = () => {
       localStorage.setItem('thpt_office_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('thpt_office_theme', 'light');
     }
   }, [darkMode]);
 
-  // If user is not logged in, ALWAYS show the dedicated LoginPage!
-  if (!currentUser) {
-    return <LoginPage />;
+  // Restore saved activeCourseId/ModuleId on initial mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(sessionStateKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.activeCourseId) setActiveCourseId(parsed.activeCourseId);
+        if (parsed.activeModuleId) setActiveModuleId(parsed.activeModuleId);
+        if (parsed.activeLessonId) setActiveLessonId(parsed.activeLessonId);
+      }
+    } catch {
+      // ignore
+    }
+  }, [sessionStateKey, setActiveCourseId, setActiveModuleId, setActiveLessonId]);
+
+  // Save view state to localStorage on every change
+  useEffect(() => {
+    try {
+      const statePayload = {
+        viewMode,
+        activeCourseId,
+        activeModuleId,
+        activeLessonId,
+        cpLessonIndex: cpState.lessonIndex,
+        cpTab: cpState.tab,
+        cpProblemId: cpState.problemId,
+        roboticsLessonId
+      };
+      localStorage.setItem(sessionStateKey, JSON.stringify(statePayload));
+    } catch {
+      // ignore
+    }
+  }, [viewMode, activeCourseId, activeModuleId, activeLessonId, cpState, roboticsLessonId, sessionStateKey]);
+
+  // Unauthenticated user: show LandingPage by default; show LoginPage when user clicks login or modal
+  if (!currentUser && !isGuestExploring) {
+    if (showLoginModal) {
+      return <LoginPage onBackToLanding={() => setShowLoginModal(false)} />;
+    }
+    return (
+      <LandingPageView
+        onLoginClick={() => setShowLoginModal(true)}
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode(prev => !prev)}
+        onExploreCourses={() => setIsGuestExploring(true)}
+      />
+    );
   }
 
   const currentModule = CURRICULUM_DATA[activeModuleId];
   const currentLesson =
     currentModule.lessons.find(l => l.id === activeLessonId) || currentModule.lessons[0];
-
   const handleSelectCourse = (course: CourseDefinition) => {
     setActiveCourseId(course.id);
     if (course.kind === 'programming') {
@@ -121,7 +212,7 @@ const AppContent: React.FC = () => {
         onOpenCurriculum={() => setViewMode('curriculum')}
         onOpenDashboard={() => setViewMode('dashboard')}
         onOpenPractice={() => setViewMode('practice')}
-        onOpenLogin={() => {}}
+        onOpenLogin={() => setShowLoginModal(true)}
         currentView={viewMode}
         activeCourseId={activeCourseId}
       />
@@ -137,11 +228,17 @@ const AppContent: React.FC = () => {
           <CompetitiveProgrammingView
             courseId={(activeCourseId === 'cp-silver' || activeCourseId === 'cp-bronze' || activeCourseId === 'cp-basic') ? activeCourseId : 'cp-basic'}
             onBackToCourses={() => setViewMode('courses')}
+            initialLessonIndex={cpState.lessonIndex}
+            initialTab={cpState.tab}
+            initialProblemId={cpState.problemId}
+            onStateChange={setCpState}
           />
         ) : viewMode === 'robotics' ? (
           <RoboticsLearningView
             courseId={(activeCourseId === 'robotics-basic' || activeCourseId === 'robotics-intermediate' || activeCourseId === 'robotics-advanced') ? (activeCourseId as RoboticsCourseId) : 'robotics-basic'}
             onBackToCourses={() => setViewMode('courses')}
+            initialLessonId={roboticsLessonId}
+            onLessonChange={setRoboticsLessonId}
           />
         ) : viewMode === 'practice' ? (
           <WordPracticeReviewView
@@ -162,6 +259,15 @@ const AppContent: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Guest Login Modal if exploring */}
+      {showLoginModal && !currentUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="w-full max-w-md">
+            <LoginPage onBackToLanding={() => setShowLoginModal(false)} />
+          </div>
+        </div>
+      )}
 
       {/* Summary Celebration Modal */}
       {isSummaryOpen && (

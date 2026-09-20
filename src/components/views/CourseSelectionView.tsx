@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLearning } from '../../context/LearningContext';
 import { COURSES_REGISTRY } from '../../data/coursesData';
@@ -75,33 +75,39 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
         return <BookOpen className="w-6 h-6 text-white" />;
     }
   };
-  const filteredCourses = COURSES_REGISTRY.filter(course => {
-    const matchesSearch =
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredCourses = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return COURSES_REGISTRY.filter(course => {
+      const matchesSearch =
+        !query ||
+        course.title.toLowerCase().includes(query) ||
+        course.subtitle.toLowerCase().includes(query) ||
+        course.tags.some(t => t.toLowerCase().includes(query));
 
-    if (!matchesSearch) return false;
+      if (!matchesSearch) return false;
 
-    if (activeFilter === 'my-courses') {
-      return isCourseUnlocked(course.id);
-    }
-    if (activeFilter === 'office') {
-      return course.category === 'office';
-    }
-    if (activeFilter === 'practice') {
-      return course.category === 'practice';
-    }
-    if (activeFilter === 'programming') {
-      return course.category === 'programming';
-    }
-    if (activeFilter === 'robotics') {
-      return course.category === 'robotics';
-    }
-    return true;
-  });
+      if (activeFilter === 'my-courses') {
+        return isCourseUnlocked(course.id);
+      }
+      if (activeFilter === 'office') {
+        return course.category === 'office';
+      }
+      if (activeFilter === 'practice') {
+        return course.category === 'practice';
+      }
+      if (activeFilter === 'programming') {
+        return course.category === 'programming';
+      }
+      if (activeFilter === 'robotics') {
+        return course.category === 'robotics';
+      }
+      return true;
+    });
+  }, [searchQuery, activeFilter, allowedCourses]);
 
-  const myCoursesCount = COURSES_REGISTRY.filter(c => isCourseUnlocked(c.id)).length;
+  const myCoursesCount = useMemo(() => {
+    return COURSES_REGISTRY.filter(c => isCourseUnlocked(c.id)).length;
+  }, [allowedCourses]);
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-8 space-y-8 animate-fadeIn">

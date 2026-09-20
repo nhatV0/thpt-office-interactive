@@ -27,7 +27,7 @@ const CODE_ANNOTATIONS: Record<string, string> = {
 };
 
 // Interactive Code Line with Hover Annotation
-const AnnotatedCodeLine: React.FC<{ line: string; isComment: boolean }> = ({ line, isComment }) => {
+const AnnotatedCodeLine: React.FC<{ line: string; isComment: boolean }> = React.memo(({ line, isComment }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const trimmed = line.trim();
 
@@ -72,7 +72,7 @@ const AnnotatedCodeLine: React.FC<{ line: string; isComment: boolean }> = ({ lin
       )}
     </div>
   );
-};
+});
 
 // Single Code Block Component with Copy & Language Badge
 const SingleCodeBlock: React.FC<{
@@ -81,7 +81,7 @@ const SingleCodeBlock: React.FC<{
   title?: string;
   sampleInput?: string;
   sampleOutput?: string;
-}> = ({ code, language, title, sampleInput, sampleOutput }) => {
+}> = React.memo(({ code, language, title, sampleInput, sampleOutput }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -174,15 +174,15 @@ const SingleCodeBlock: React.FC<{
       )}
     </div>
   );
-};
+});
 
 // Dual Split-Pane Code Comparison Component (C++ on Left, Python on Right)
-const DualCodeComparison: React.FC<{
+const DualCodeBlock: React.FC<{
   cppCode: string;
-  pythonCode: string;
-  explanationCpp?: string;
-  explanationPython?: string;
-}> = ({ cppCode, pythonCode, explanationCpp, explanationPython }) => {
+  pyCode: string;
+  sampleInput?: string;
+  sampleOutput?: string;
+}> = React.memo(({ cppCode, pyCode, sampleInput, sampleOutput }) => {
   return (
     <div className="my-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 sm:p-5 shadow-sm space-y-4">
       {/* Top Banner Header */}
@@ -203,32 +203,20 @@ const DualCodeComparison: React.FC<{
         {/* Left Column: C++ */}
         <div className="flex flex-col space-y-2.5">
           <div className="flex-1">
-            <SingleCodeBlock code={cppCode} language="cpp" title="C++ 17/20" />
+            <SingleCodeBlock code={cppCode} language="cpp" title="C++ 17/20" sampleInput={sampleInput} sampleOutput={sampleOutput} />
           </div>
-          {explanationCpp && (
-            <div className="p-3 bg-sky-500/5 dark:bg-sky-500/10 border border-sky-500/20 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-              <span className="font-bold text-sky-700 dark:text-sky-400 block mb-1">Giải thích C++:</span>
-              <p>{explanationCpp}</p>
-            </div>
-          )}
         </div>
 
         {/* Right Column: Python */}
         <div className="flex flex-col space-y-2.5">
           <div className="flex-1">
-            <SingleCodeBlock code={pythonCode} language="python" title="Python 3" />
+            <SingleCodeBlock code={pyCode} language="python" title="Python 3" sampleInput={sampleInput} sampleOutput={sampleOutput} />
           </div>
-          {explanationPython && (
-            <div className="p-3 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-              <span className="font-bold text-emerald-700 dark:text-emerald-400 block mb-1">Giải thích Python:</span>
-              <p>{explanationPython}</p>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
-};
+});
 
 // Check if a line marks the end of code block and start of text/heading
 const isCodeEndMarker = (line: string): boolean => {
@@ -270,7 +258,7 @@ const isCodeEndMarker = (line: string): boolean => {
   return false;
 };
 
-export const MathRenderer: React.FC<MathRendererProps> = ({ content, className = '' }) => {
+const MathRendererComponent: React.FC<MathRendererProps> = ({ content, className = '' }) => {
   const elements = useMemo(() => {
     if (!content) return null;
 
@@ -531,12 +519,10 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
           }
 
           resultNodes.push(
-            <DualCodeComparison
+            <DualCodeBlock
               key={`${lineKey}-dual`}
               cppCode={cppLines.join('\n').trim()}
-              pythonCode={pyLines.join('\n').trim()}
-              explanationCpp={expCpp}
-              explanationPython={expPy}
+              pyCode={pyLines.join('\n').trim()}
             />
           );
           i = nextIdx;
@@ -731,3 +717,5 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
 
   return <div className={`select-text space-y-1 text-slate-900 dark:text-slate-100 ${className}`}>{elements}</div>;
 };
+
+export const MathRenderer = React.memo(MathRendererComponent);

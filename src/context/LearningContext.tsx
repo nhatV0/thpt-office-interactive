@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ModuleType, UserProgressState } from '../types/curriculum';
 import { CURRICULUM_DATA } from '../data/curriculumData';
 import { getAllCourseIds, getCourseById } from '../data/coursesData';
+import { ROBOTICS_COURSES_DATA } from '../data/roboticsCoursesData';
 import { useAuth } from './AuthContext';
 interface LearningContextType {
   activeCourseId: string;
@@ -65,13 +66,29 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     ? currentUser.allowedCourses
     : ['word'];
 
-  const initialCourseId = allowedCourses[0] || 'word';
+  // Check if user has a previously stored session state
+  const savedState = (() => {
+    try {
+      if (currentUser?.username) {
+        const raw = localStorage.getItem(`thpt_office_last_view_state_${currentUser.username}`);
+        if (raw) return JSON.parse(raw);
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  })();
+
+  const initialCourseId = (savedState?.activeCourseId && allowedCourses.includes(savedState.activeCourseId))
+    ? savedState.activeCourseId
+    : (allowedCourses[0] || 'word');
   const initialCourseDef = getCourseById(initialCourseId);
-  const initialModule: ModuleType = (initialCourseDef?.moduleId as ModuleType) || 'word';
+  const initialModule: ModuleType = savedState?.activeModuleId || (initialCourseDef?.moduleId as ModuleType) || 'word';
+  const initialLesson = savedState?.activeLessonId || `${initialModule}-lesson-1`;
 
   const [activeCourseId, setActiveCourseIdState] = useState<string>(initialCourseId);
   const [activeModuleId, setActiveModuleIdState] = useState<ModuleType>(initialModule);
-  const [activeLessonId, setActiveLessonId] = useState<string>(`${initialModule}-lesson-1`);
+  const [activeLessonId, setActiveLessonId] = useState<string>(initialLesson);
   const [currentTab, setCurrentTab] = useState<'theory' | 'practice' | 'quiz'>('theory');
 
   // Keep activeCourseId and activeModuleId within allowed courses
@@ -233,6 +250,29 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return { completed, total, percentage };
       } catch {
         return { completed: 0, total: courseDef.totalUnits || 10, percentage: 0 };
+      }
+    }
+
+    if (courseDef.kind === 'robotics') {
+      try {
+        const rData = ROBOTICS_COURSES_DATA[courseId];
+        const totalUnits = rData?.lessons.length || courseDef.totalUnits || 8;
+        const challengesDoneKey = `robotics_${courseId}_challenges_done`;
+        const challengesDone = JSON.parse(localStorage.getItem(challengesDoneKey) || '{}');
+        const doneChallengeCount = Object.values(challengesDone).filter(Boolean).length;
+        
+        // Count total challenges across all lessons
+        let totalChallenges = 0;
+        rData?.lessons.forEach(l => {
+          totalChallenges += (l.challenges?.length || 0);
+        });
+
+        const denominator = totalChallenges > 0 ? totalChallenges : totalUnits;
+        const completed = totalChallenges > 0 ? doneChallengeCount : 0;
+        const percentage = Math.min(100, Math.round((completed / denominator) * 100));
+        return { completed, total: denominator, percentage };
+      } catch {
+        return { completed: 0, total: courseDef.totalUnits || 8, percentage: 0 };
       }
     }
 

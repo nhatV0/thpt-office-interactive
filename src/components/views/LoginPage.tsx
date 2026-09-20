@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LogIn, User, Lock } from 'lucide-react';
 import { sanitizeText } from '../../utils/security';
-export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+interface LoginPageProps {
+  onBackToLanding?: () => void;
+}
 
+export const LoginPage: React.FC<LoginPageProps> = ({ onBackToLanding }) => {
+  const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -23,7 +26,16 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-100 dark:bg-slate-950 p-4 selection:bg-sky-500 selection:text-white">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-100 dark:bg-slate-950 p-4 selection:bg-sky-500 selection:text-white relative">
+      {onBackToLanding && (
+        <button
+          type="button"
+          onClick={onBackToLanding}
+          className="absolute top-6 left-6 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          ← Quay lại trang chủ
+        </button>
+      )}
       {/* Decorative ambient background */}
       <div className="w-full max-w-md space-y-6">
         {/* Brand header */}
