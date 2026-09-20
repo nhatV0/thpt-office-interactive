@@ -146,7 +146,7 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
   }, [myCourses, calculateCourseProgress]);
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-8 space-y-8 animate-fadeIn">
+    <div className="w-full max-w-6xl mx-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 animate-fadeIn">
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden border border-slate-800">
         <div className="relative z-10 max-w-3xl space-y-3">

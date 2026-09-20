@@ -26,7 +26,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
   onOpenPractice,
   onBackToCourses
 }) => {
-  const { activeModuleId, setActiveModuleId, userProgress } = useLearning();
+  const { activeModuleId, setActiveModuleId, setActiveCourseId, userProgress } = useLearning();
   const { currentUser } = useAuth();
   const isTeacher = currentUser?.role === 'teacher';
   const allowedCourses = isTeacher
@@ -58,7 +58,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
   const ppProgress = calculateModuleProgress('powerpoint');
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-8 space-y-8">
+    <div className="w-full max-w-5xl mx-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
       {/* Navigation Top Bar */}
       {onBackToCourses && (
         <div className="flex items-center justify-between">
@@ -125,7 +125,10 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
           <button
             type="button"
             disabled={!isCourseAllowed('word')}
-            onClick={() => setActiveModuleId('word')}
+            onClick={() => {
+              setActiveModuleId('word');
+              setActiveCourseId('word');
+            }}
             className={`w-full p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
               !isCourseAllowed('word')
                 ? 'opacity-60 bg-slate-100 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed'
@@ -172,7 +175,10 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
           <button
             type="button"
             disabled={!isCourseAllowed('excel')}
-            onClick={() => setActiveModuleId('excel')}
+            onClick={() => {
+              setActiveModuleId('excel');
+              setActiveCourseId('excel');
+            }}
             className={`w-full p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
               !isCourseAllowed('excel')
                 ? 'opacity-60 bg-slate-100 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed'
@@ -217,7 +223,10 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
           <button
             type="button"
             disabled={!isCourseAllowed('powerpoint')}
-            onClick={() => setActiveModuleId('powerpoint')}
+            onClick={() => {
+              setActiveModuleId('powerpoint');
+              setActiveCourseId('powerpoint');
+            }}
             className={`w-full p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
               !isCourseAllowed('powerpoint')
                 ? 'opacity-60 bg-slate-100 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed'

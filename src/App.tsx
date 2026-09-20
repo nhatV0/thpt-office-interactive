@@ -102,20 +102,7 @@ const AppContent: React.FC = () => {
     }
   }, [darkMode]);
 
-  // Restore saved activeCourseId/ModuleId on initial mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(sessionStateKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.activeCourseId) setActiveCourseId(parsed.activeCourseId);
-        if (parsed.activeModuleId) setActiveModuleId(parsed.activeModuleId);
-        if (parsed.activeLessonId) setActiveLessonId(parsed.activeLessonId);
-      }
-    } catch {
-      // ignore
-    }
-  }, [sessionStateKey, setActiveCourseId, setActiveModuleId, setActiveLessonId]);
+  // Note: Initial state is already restored from localStorage in LearningContext constructor.
 
   // Save view state to localStorage on every change
   useEffect(() => {
@@ -170,6 +157,7 @@ const AppContent: React.FC = () => {
       setViewMode('practice');
     } else if (course.moduleId) {
       setActiveModuleId(course.moduleId);
+      setActiveLessonId(`${course.moduleId}-lesson-1`);
       setViewMode('curriculum');
     }
   };
@@ -225,7 +213,7 @@ const AppContent: React.FC = () => {
       />
 
       {/* Main View Area */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden min-h-0">
         {viewMode === 'courses' ? (
           <CourseSelectionView
             onSelectCourse={handleSelectCourse}

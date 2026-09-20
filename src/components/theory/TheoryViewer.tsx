@@ -40,7 +40,7 @@ export const TheoryViewer: React.FC<TheoryViewerProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="w-full max-w-4xl mx-auto p-2 sm:p-6 space-y-4 sm:space-y-6">
       {/* Step Indicators */}
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-2">

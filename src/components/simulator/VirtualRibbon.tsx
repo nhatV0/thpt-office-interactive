@@ -905,10 +905,10 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
   };
 
   return (
-    <div className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 select-none">
+    <div className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 select-none shrink-0">
       {/* Ribbon Tabs bar */}
-      <div className="flex items-center px-3 border-b border-slate-200 dark:border-slate-800 bg-slate-200/70 dark:bg-slate-950/70 gap-1 overflow-x-auto">
-        <span className="text-xs font-bold uppercase tracking-wider px-2 py-1.5 text-slate-500 dark:text-slate-400">
+      <div className="flex items-center px-2 sm:px-3 border-b border-slate-200 dark:border-slate-800 bg-slate-200/70 dark:bg-slate-950/70 gap-1 overflow-x-auto no-scrollbar">
+        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider px-1.5 py-1 text-slate-500 dark:text-slate-400 shrink-0">
           Ribbon
         </span>
         {tabs.map(tab => (
@@ -916,7 +916,7 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+            className={`px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors shrink-0 whitespace-nowrap cursor-pointer ${
               activeTab === tab.id
                 ? moduleType === 'word'
                   ? 'border-sky-600 text-sky-700 dark:text-sky-400 bg-white dark:bg-slate-900'
@@ -931,8 +931,8 @@ export const VirtualRibbon: React.FC<VirtualRibbonProps> = ({
         ))}
       </div>
 
-      {/* Ribbon Command Strip */}
-      <div className="p-2 min-h-[58px] flex items-center overflow-x-auto bg-slate-50 dark:bg-slate-900">
+      {/* Ribbon Command Strip with smooth touch scrolling */}
+      <div className="p-2 min-h-[58px] flex items-center overflow-x-auto bg-slate-50 dark:bg-slate-900 gap-2 touch-pan-x">
         {moduleType === 'word' && renderWordControls()}
         {moduleType === 'excel' && renderExcelControls()}
         {moduleType === 'powerpoint' && renderPowerPointControls()}

@@ -83,12 +83,12 @@ export const VirtualCanvas: React.FC<VirtualCanvasProps> = ({
         : 'text-left';
 
     return (
-      <div className="flex-1 bg-slate-200 dark:bg-slate-950 p-4 sm:p-8 flex justify-center items-start overflow-y-auto min-h-[440px]">
+      <div className="flex-1 bg-slate-200 dark:bg-slate-950 p-2 sm:p-6 lg:p-8 flex justify-center items-start overflow-y-auto min-h-[360px] sm:min-h-[440px]">
         <div
           className={`bg-white text-slate-900 shadow-xl transition-all duration-300 relative border border-slate-300 flex flex-col justify-between ${
             isLandscape
-              ? 'w-full max-w-[620px] min-h-[380px] p-6'
-              : 'w-full max-w-[460px] min-h-[580px] p-8'
+              ? 'w-full max-w-[620px] min-h-[320px] sm:min-h-[380px] p-4 sm:p-6'
+              : 'w-full max-w-[460px] min-h-[440px] sm:min-h-[580px] p-4 sm:p-8'
           }`}
           style={{ fontFamily: wordState.fontFamily === 'Times New Roman' ? '"Times New Roman", serif' : 'system-ui, sans-serif' }}
         >
@@ -431,10 +431,10 @@ export const VirtualCanvas: React.FC<VirtualCanvasProps> = ({
   const currentSlide = ppState.slides[ppState.currentSlideIndex] || ppState.slides[0];
 
   return (
-    <div className="flex-1 bg-slate-200 dark:bg-slate-950 p-2 sm:p-4 flex gap-3 overflow-hidden min-h-[440px]">
-      {/* Slide Thumbnails Column */}
-      <div className="w-36 sm:w-44 flex flex-col gap-2 overflow-y-auto pr-1 select-none border-r border-slate-300 dark:border-slate-800">
-        <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase px-1">
+    <div className="flex-1 bg-slate-200 dark:bg-slate-950 p-2 sm:p-4 flex flex-col sm:flex-row gap-2 sm:gap-3 overflow-auto min-h-[360px] sm:min-h-[440px]">
+      {/* Slide Thumbnails Column (horizontal on mobile, vertical on tablet/desktop) */}
+      <div className="w-full sm:w-40 flex sm:flex-col flex-row gap-2 overflow-x-auto sm:overflow-y-auto pb-1 sm:pb-0 sm:pr-1 select-none border-b sm:border-b-0 sm:border-r border-slate-300 dark:border-slate-800 shrink-0">
+        <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase px-1 hidden sm:block">
           Slides ({ppState.slides.length})
         </span>
         {ppState.slides.map((slide, idx) => (
@@ -470,8 +470,7 @@ export const VirtualCanvas: React.FC<VirtualCanvasProps> = ({
           </div>
         )}
 
-        <div className="w-full max-w-[640px] aspect-[16/9] bg-white text-slate-900 shadow-2xl rounded-lg p-6 flex flex-col justify-between relative border border-slate-300 dark:border-slate-800 overflow-hidden">
-          {/* Slide Master Logo */}
+        <div className="w-full max-w-[640px] aspect-[16/9] bg-white text-slate-900 shadow-2xl rounded-lg p-3 sm:p-6 flex flex-col justify-between relative border border-slate-300 dark:border-slate-800 overflow-hidden">
           <div className="flex justify-between items-start">
             <div className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">
               THPT TIN HỌC VĂN PHÒNG
