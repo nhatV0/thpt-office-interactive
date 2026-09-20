@@ -339,35 +339,116 @@ export const LessonUnitView: React.FC<LessonUnitViewProps> = ({
           </div>
         </aside>
 
-        {/* RIGHT MAIN WORKSPACE */}
-        <main className="flex-1 flex flex-col overflow-y-auto min-w-0">
+        {/* MIDDLE COLUMN: Sub-items list matching the right side of screenshot (Theories, Tasks, Quiz) */}
+        <div className="w-full md:w-80 lg:w-84 xl:w-96 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 flex flex-col shrink-0 max-h-[35vh] md:max-h-full overflow-y-auto">
+          <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 sticky top-0 z-10 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+              Bài {lesson.order}: {lesson.title}
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold shrink-0">
+              {currentTab === 'theory' ? `${lesson.theories.length} lý thuyết` : currentTab === 'practice' ? `${lesson.tasks.length} thao tác` : `${lesson.quiz.length} câu hỏi`}
+            </span>
+          </div>
 
-      {/* Main Tab View Area */}
-      <div className="flex-1 overflow-y-auto p-2 sm:p-4">
-        {currentTab === 'theory' && (
-          <TheoryViewer
-            theories={lesson.theories}
-            onCompleteTheory={handleTheoryFinished}
-            isCompleted={progress.theoryCompleted}
-          />
-        )}
+          <div className="p-2 space-y-1.5 flex-1">
+            {currentTab === 'theory' && (
+              lesson.theories.map((th, thIdx) => {
+                return (
+                  <div
+                    key={th.id}
+                    className="p-3 rounded-2xl border border-sky-500/30 bg-sky-50/40 dark:bg-sky-950/20 text-left space-y-1"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300">
+                        LÝ THUYẾT {thIdx + 1}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">Thẻ {thIdx + 1}/{lesson.theories.length}</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
+                      {th.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      {th.concept}
+                    </p>
+                  </div>
+                );
+              })
+            )}
 
-        {currentTab === 'practice' && (
-          <VirtualOfficeSimulator
-            moduleType={activeModuleId}
-            tasks={lesson.tasks}
-            onAllTasksCompleted={handlePracticeFinished}
-          />
-        )}
+            {currentTab === 'practice' && (
+              lesson.tasks.map((task, tIdx) => {
+                return (
+                  <div
+                    key={task.id}
+                    className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-left space-y-1"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                        THAO TÁC {tIdx + 1}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">Bước {tIdx + 1}/{lesson.tasks.length}</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
+                      {task.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      {task.instruction}
+                    </p>
+                  </div>
+                );
+              })
+            )}
 
-        {currentTab === 'quiz' && (
-          <QuizEngine
-            questions={lesson.quiz}
-            onQuizCompleted={handleQuizFinished}
-            previousScore={progress.quizScore}
-          />
-        )}
-      </div>
+            {currentTab === 'quiz' && (
+              lesson.quiz.map((q, qIdx) => {
+                return (
+                  <div
+                    key={q.id}
+                    className="p-3 rounded-2xl border border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/20 text-left space-y-1"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                        CÂU {qIdx + 1}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">{q.options.length} lựa chọn</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">
+                      {q.question}
+                    </h4>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT MAIN WORKSPACE: Interactive Viewer / Simulator / Quiz */}
+        <main className="flex-1 flex flex-col overflow-y-auto min-w-0 bg-slate-50 dark:bg-slate-950">
+          <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+            {currentTab === 'theory' && (
+              <TheoryViewer
+                theories={lesson.theories}
+                onCompleteTheory={handleTheoryFinished}
+                isCompleted={progress.theoryCompleted}
+              />
+            )}
+
+            {currentTab === 'practice' && (
+              <VirtualOfficeSimulator
+                moduleType={activeModuleId}
+                tasks={lesson.tasks}
+                onAllTasksCompleted={handlePracticeFinished}
+              />
+            )}
+
+            {currentTab === 'quiz' && (
+              <QuizEngine
+                questions={lesson.quiz}
+                onQuizCompleted={handleQuizFinished}
+                previousScore={progress.quizScore}
+              />
+            )}
+          </div>
       {/* Bottom Lesson Navigation Bar */}
       <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 flex items-center justify-between gap-3 select-none shrink-0">
         <button
