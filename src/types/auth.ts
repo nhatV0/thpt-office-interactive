@@ -31,4 +31,6 @@ export interface UserAccount {
   createdAt: string;
   failedLoginAttempts?: number;
   lockedUntil?: string | null;
+  email?: string;
+  phoneNumber?: string;
 }

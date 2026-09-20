@@ -45,7 +45,7 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
     ? COURSES_REGISTRY.map(c => c.id)
     : currentUser?.allowedCourses && currentUser.allowedCourses.length > 0
     ? currentUser.allowedCourses
-    : ['word'];
+    : COURSES_REGISTRY.map(c => c.id);
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'my-courses' | 'office' | 'practice' | 'programming' | 'robotics' | 'ic3'>('all');
   const [searchQuery, setSearchQuery] = useState('');

@@ -64,7 +64,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     ? getAllCourseIds()
     : currentUser?.allowedCourses && currentUser.allowedCourses.length > 0
     ? currentUser.allowedCourses
-    : ['word'];
+    : getAllCourseIds();
 
   // Check if user has a previously stored session state
   const savedState = (() => {

@@ -6,6 +6,7 @@ interface AuthContextType {
   accounts: UserAccount[];
   login: (username: string, password?: string) => { success: boolean; message?: string };
   logout: () => void;
+  updateUserProfile: (data: { fullName: string; password?: string; email?: string; phoneNumber?: string }) => { success: boolean; message?: string };
   createStudent: (username: string, password: string, fullName: string, schoolClass: string, allowedCourses?: string[]) => boolean;
   updateStudentCourses: (studentId: string, allowedCourses: string[]) => void;
   deleteStudent: (id: string) => void;
@@ -36,7 +37,9 @@ const defaultAccounts: UserAccount[] = [
     fullName: 'Nguyễn Văn An',
     role: 'student',
     schoolClass: '12A1',
-    allowedCourses: ['word', 'excel', 'word-practice'],
+    allowedCourses: getAllCourseIds(),
+    email: 'hocvien1@thpt.edu.vn',
+    phoneNumber: '0912345678',
     xpPoints: 240,
     streak: 4,
     progress: {
@@ -53,7 +56,9 @@ const defaultAccounts: UserAccount[] = [
     fullName: 'Trần Thị Mai',
     role: 'student',
     schoolClass: '12A2',
-    allowedCourses: ['word'],
+    allowedCourses: getAllCourseIds(),
+    email: 'hocvien2@thpt.edu.vn',
+    phoneNumber: '0987654321',
     xpPoints: 120,
     streak: 2,
     progress: {
@@ -75,9 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return parsed.map((a: UserAccount) => {
           const allowedCourses = a.allowedCourses && a.allowedCourses.length > 0
             ? a.allowedCourses
-            : a.role === 'teacher'
-            ? getAllCourseIds()
-            : ['word'];
+            : getAllCourseIds();
           if (a.username.toLowerCase() === 'admin') {
             return {
               ...a,
@@ -197,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string,
     fullName: string,
     schoolClass: string,
-    allowedCourses: string[] = ['word']
+    allowedCourses: string[] = getAllCourseIds()
   ): boolean => {
     const exists = accounts.some(
       a => a.username.toLowerCase() === username.trim().toLowerCase()
@@ -211,7 +214,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fullName: fullName.trim(),
       role: 'student',
       schoolClass: schoolClass.trim(),
-      allowedCourses: allowedCourses.length > 0 ? allowedCourses : ['word'],
+      allowedCourses: allowedCourses.length > 0 ? allowedCourses : getAllCourseIds(),
       xpPoints: 0,
       streak: 1,
       progress: {
@@ -282,6 +285,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(updated);
     setAccounts(prev => prev.map(a => (a.id === updated.id ? updated : a)));
   };
+  const updateUserProfile = (data: { fullName: string; password?: string; email?: string; phoneNumber?: string }): { success: boolean; message?: string } => {
+    if (!currentUser) {
+      return { success: false, message: 'Chưa đăng nhập.' };
+    }
+    const trimmedFullName = data.fullName.trim();
+    if (!trimmedFullName) {
+      return { success: false, message: 'Họ và tên không được để trống.' };
+    }
+    if (data.password && data.password.trim().length < 3) {
+      return { success: false, message: 'Mật khẩu mới phải có ít nhất 3 ký tự.' };
+    }
+
+    const updated: UserAccount = {
+      ...currentUser,
+      fullName: trimmedFullName,
+      ...(data.password && data.password.trim() ? { password: data.password.trim() } : {}),
+      email: data.email?.trim() || '',
+      phoneNumber: data.phoneNumber?.trim() || ''
+    };
+
+    setCurrentUser(updated);
+    setAccounts(prev => prev.map(a => (a.id === updated.id ? updated : a)));
+    return { success: true, message: 'Cập nhật thông tin thành công.' };
+  };
+
 
   return (
     <AuthContext.Provider
@@ -294,7 +322,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createStudent,
         deleteStudent,
         resetStudentProgress,
-        updateCurrentUserProgress
+        updateCurrentUserProgress,
+        updateUserProfile
       }}
     >
       {children}

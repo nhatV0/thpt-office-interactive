@@ -11,9 +11,11 @@ import {
   LogIn,
   LogOut,
   ChevronRight,
-  LayoutGrid
+  LayoutGrid,
+  User
 } from 'lucide-react';
 import { getCourseById } from '../../data/coursesData';
+import { StudentProfileModal } from '../modals/StudentProfileModal';
 interface HeaderNavProps {
   darkMode: boolean;
   onToggleDarkMode: () => void;
@@ -38,11 +40,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   activeCourseId = 'word'
 }) => {
   const { xpPoints, streak, completedCount, totalLessons } = useLearning();
+  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const { currentUser, logout } = useAuth();
   const currentCourse = getCourseById(activeCourseId);
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-2.5 sm:px-6 h-14 flex items-center justify-between shadow-xs select-none gap-2">
+    <>
+      <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-2.5 sm:px-6 h-14 flex items-center justify-between shadow-xs select-none gap-2">
       {/* Brand & Home button */}
       <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
         {/* Nút Chọn Khóa Học / Trang Chủ */}
@@ -198,14 +202,26 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         {/* User Account / Login Button */}
         {currentUser ? (
           <div className="flex items-center gap-2 pl-1 border-l border-slate-200 dark:border-slate-800">
-            <div className="text-right hidden sm:block">
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block leading-tight truncate max-w-[120px]">
-                {currentUser.fullName}
-              </span>
-              <span className="text-[10px] text-slate-400 block font-mono">
-                {currentUser.role === 'teacher' ? 'Giáo viên' : `Lớp ${currentUser.schoolClass}`}
-              </span>
-            </div>
+            {/* User Profile Button */}
+            <button
+              type="button"
+              onClick={() => setIsProfileOpen(true)}
+              className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer group"
+              title="Xem trang cá nhân & đổi mật khẩu"
+            >
+              <div className="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold flex items-center justify-center text-xs group-hover:bg-sky-200 dark:group-hover:bg-sky-900 transition-colors">
+                {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : <User className="w-3.5 h-3.5" />}
+              </div>
+              <div className="hidden sm:block">
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block leading-tight truncate max-w-[120px] group-hover:text-sky-600 dark:group-hover:text-sky-400">
+                  {currentUser.fullName}
+                </span>
+                <span className="text-[10px] text-slate-400 block font-mono">
+                  {currentUser.role === 'teacher' ? 'Giáo viên' : `Lớp ${currentUser.schoolClass || '12A'}`}
+                </span>
+              </div>
+            </button>
+
             <button
               type="button"
               onClick={logout}
@@ -227,5 +243,11 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         )}
       </div>
     </header>
+      {/* Profile Modal */}
+      <StudentProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
+    </>
   );
 };

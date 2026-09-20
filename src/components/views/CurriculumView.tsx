@@ -33,7 +33,7 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
     ? ['word', 'excel', 'powerpoint']
     : currentUser?.allowedCourses && currentUser.allowedCourses.length > 0
     ? currentUser.allowedCourses
-    : ['word'];
+    : ['word', 'excel', 'powerpoint'];
 
   const isCourseAllowed = (modId: string) => allowedCourses.includes(modId);
   const currentModule = CURRICULUM_DATA[activeModuleId];
