@@ -176,7 +176,8 @@ const AppContent: React.FC = () => {
     } else if (course.moduleId) {
       setActiveModuleId(course.moduleId);
       setActiveLessonId(`${course.moduleId}-lesson-1`);
-      setViewMode('curriculum');
+      setCurrentTab('theory');
+      setViewMode('lesson');
     }
   };
 
@@ -281,7 +282,7 @@ const AppContent: React.FC = () => {
           />
         ) : (
           <LessonUnitView
-            onBackToCurriculum={() => setViewMode('curriculum')}
+            onBackToCurriculum={() => setViewMode('courses')}
             onOpenSummary={() => setIsSummaryOpen(true)}
           />
         )}

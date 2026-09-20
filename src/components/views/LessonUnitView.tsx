@@ -1,9 +1,10 @@
 import React from 'react';
 import { useLearning } from '../../context/LearningContext';
 import { CURRICULUM_DATA } from '../../data/curriculumData';
-import { BookOpen, Laptop, HelpCircle, ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { BookOpen, Laptop, HelpCircle, ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Lock, Layers, Menu, X } from 'lucide-react';
 import { triggerConfetti, playRewardChime } from '../../utils/celebration';
 import { UnlockLessonConfirmModal } from '../modals/UnlockLessonConfirmModal';
+import { useAuth } from '../../context/AuthContext';
 import { TheoryViewer } from '../theory/TheoryViewer';
 import { VirtualOfficeSimulator } from '../simulator/VirtualOfficeSimulator';
 import { QuizEngine } from '../quiz/QuizEngine';
@@ -31,6 +32,10 @@ export const LessonUnitView: React.FC<LessonUnitViewProps> = ({
     setActiveLessonId
   } = useLearning();
   const moduleInfo = CURRICULUM_DATA[activeModuleId];
+  const { currentUser } = useAuth();
+  const isTeacher = currentUser?.role === 'teacher';
+
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState<boolean>(false);
   const lesson = moduleInfo.lessons.find(l => l.id === activeLessonId) || moduleInfo.lessons[0];
   const progress = userProgress[lesson.id] || {
     theoryCompleted: false,
@@ -39,8 +44,7 @@ export const LessonUnitView: React.FC<LessonUnitViewProps> = ({
     quizCompleted: false,
     isUnlocked: true
   };
-
-  const [pendingNextLesson, setPendingNextLesson] = React.useState<{ id: string; title: string; order: number } | null>(null);
+  const [pendingNextLesson, setPendingNextLesson] = React.useState<{ id: string; title: string; order: number; prevTitle?: string } | null>(null);
   const handleTheoryFinished = () => {
     triggerConfetti('subtle');
     playRewardChime('task');
@@ -78,7 +82,8 @@ export const LessonUnitView: React.FC<LessonUnitViewProps> = ({
       setPendingNextLesson({
         id: nextLesson.id,
         title: nextLesson.title,
-        order: nextLesson.order
+        order: nextLesson.order,
+        prevTitle: `Bài ${lesson.order}: ${lesson.title}`
       });
     }
   };
@@ -93,20 +98,56 @@ export const LessonUnitView: React.FC<LessonUnitViewProps> = ({
 
   const isWord = activeModuleId === 'word';
   const isExcel = activeModuleId === 'excel';
+  const completedLessonsInModule = moduleInfo.lessons.filter(l => {
+    const p = userProgress[l.id];
+    return p && p.theoryCompleted && p.practiceCompleted && p.quizCompleted;
+  }).length;
+  const moduleProgressPct = Math.round((completedLessonsInModule / moduleInfo.lessons.length) * 100);
+
+  const handleSelectLessonFromSidebar = (targetLesson: typeof moduleInfo.lessons[0]) => {
+    const p = userProgress[targetLesson.id];
+    const isUnlocked = isTeacher || p?.isUnlocked || targetLesson.order === 1;
+
+    if (isUnlocked) {
+      setActiveLessonId(targetLesson.id);
+      setCurrentTab('theory');
+      setIsSidebarOpen(false);
+    } else {
+      const prevIdx = moduleInfo.lessons.findIndex(l => l.id === targetLesson.id) - 1;
+      const prevL = prevIdx >= 0 ? moduleInfo.lessons[prevIdx] : undefined;
+      setPendingNextLesson({
+        id: targetLesson.id,
+        title: targetLesson.title,
+        order: targetLesson.order,
+        prevTitle: prevL ? `Bài ${prevL.order}: ${prevL.title}` : undefined
+      });
+    }
+  };
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+    <div className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
       {/* Lesson Header Sub-nav */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 select-none shrink-0">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 select-none shrink-0 sticky top-0 z-20">
         {/* Lesson Breadcrumb & Title */}
         <div className="flex items-center gap-2.5 min-w-0">
           <button
             type="button"
             onClick={onBackToCurriculum}
             className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 cursor-pointer shrink-0"
-            title="Quay lại danh sách bài học"
+            title="Quay lại danh sách khóa học"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
+
+          {/* Toggle Sidebar Button for Mobile/Tablet */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="lg:hidden p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
+            title="Mở danh sách bài học"
+          >
+            {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
+
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 truncate">
               <span className="capitalize">{activeModuleId}</span>
@@ -187,6 +228,119 @@ export const LessonUnitView: React.FC<LessonUnitViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Main Layout Container with Sidebar and Content */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile Backdrop */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
+        {/* LEFT SIDEBAR: Lessons List (Matching exact screenshot pattern) */}
+        <aside
+          className={`fixed lg:static inset-y-0 left-0 z-40 lg:z-auto w-72 sm:w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 overflow-y-auto transform transition-transform duration-200 ease-in-out ${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
+        >
+          {/* Header of Sidebar: CHUYÊN ĐỀ (8) and Progress % */}
+          <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 sticky top-0 z-10">
+            <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400 mb-1.5">
+              <span className="flex items-center gap-1.5 uppercase font-bold tracking-wider text-slate-700 dark:text-slate-300">
+                <Layers className="w-4 h-4 text-sky-500" />
+                CHUYÊN ĐỀ ({moduleInfo.lessons.length})
+              </span>
+              <span className="font-bold text-sky-600 dark:text-sky-400">{moduleProgressPct}%</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${isWord ? 'bg-sky-500' : isExcel ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                style={{ width: `${moduleProgressPct}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Lessons List Navigation */}
+          <div className="p-2 space-y-1.5 flex-1">
+            {moduleInfo.lessons.map(l => {
+              const isSelected = l.id === lesson.id;
+              const p = userProgress[l.id];
+              const isFinished = p && p.theoryCompleted && p.practiceCompleted && p.quizCompleted;
+              const isUnlocked = isTeacher || p?.isUnlocked || l.order === 1;
+
+              // Step count completed (0 to 3)
+              const stepsDone = (p?.theoryCompleted ? 1 : 0) + (p?.practiceCompleted ? 1 : 0) + (p?.quizCompleted ? 1 : 0);
+
+              return (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => handleSelectLessonFromSidebar(l)}
+                  className={`w-full text-left p-3 rounded-2xl transition-all duration-150 relative group flex items-start gap-3 cursor-pointer border ${
+                    isSelected
+                      ? isWord
+                        ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-500/50 shadow-xs ring-1 ring-sky-400/30'
+                        : isExcel
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-500/50 shadow-xs ring-1 ring-emerald-400/30'
+                        : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-500/50 shadow-xs ring-1 ring-rose-400/30'
+                      : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:border-slate-300 dark:hover:border-slate-700'
+                  }`}
+                >
+                  {/* Left Number Box: matches exact screenshot style */}
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 transition-colors ${
+                      isSelected
+                        ? isWord
+                          ? 'bg-sky-600 text-white font-black shadow-xs'
+                          : isExcel
+                          ? 'bg-emerald-600 text-white font-black shadow-xs'
+                          : 'bg-rose-600 text-white font-black shadow-xs'
+                        : isFinished
+                        ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                        : isUnlocked
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-slate-200'
+                        : 'bg-slate-100 dark:bg-slate-800/60 text-slate-400'
+                    }`}
+                  >
+                    {isFinished ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    ) : isUnlocked ? (
+                      l.order
+                    ) : (
+                      <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                  </div>
+
+                  {/* Lesson Meta and Title */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-bold">
+                        Bài {l.order}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-semibold">
+                        {stepsDone}/3
+                      </span>
+                    </div>
+                    <p className={`text-xs font-bold line-clamp-2 leading-relaxed ${
+                      isSelected
+                        ? 'text-slate-900 dark:text-white'
+                        : isUnlocked
+                        ? 'text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'
+                        : 'text-slate-400 dark:text-slate-500'
+                    }`}>
+                      {l.title}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* RIGHT MAIN WORKSPACE */}
+        <main className="flex-1 flex flex-col overflow-y-auto min-w-0">
 
       {/* Main Tab View Area */}
       <div className="flex-1 overflow-y-auto p-2 sm:p-4">
@@ -272,10 +426,12 @@ export const LessonUnitView: React.FC<LessonUnitViewProps> = ({
         isOpen={Boolean(pendingNextLesson)}
         lessonTitle={pendingNextLesson?.title || ''}
         lessonOrder={pendingNextLesson?.order || 0}
-        prevLessonTitle={`Bài ${lesson.order}: ${lesson.title}`}
+        prevLessonTitle={pendingNextLesson?.prevTitle || `Bài ${lesson.order}: ${lesson.title}`}
         onConfirm={handleConfirmUnlock}
         onCancel={() => setPendingNextLesson(null)}
       />
+        </main>
+      </div>
     </div>
   );
 };
