@@ -6,15 +6,16 @@ import {
   ArrowLeft,
   BookOpen,
   Award,
+  FileText,
   Download,
   ExternalLink,
   CheckCircle2,
   Trophy,
   HelpCircle,
-  FileText,
   Menu,
   X,
   Clock,
+  ChevronLeft,
   ChevronRight,
   RotateCcw,
   Lightbulb,
@@ -83,6 +84,10 @@ export const IC3LearningView: React.FC<IC3LearningViewProps> = ({
     setQuizScore(0);
     setXpAwarded(false);
   };
+
+  const currentTopicIndex = courseData.topics.findIndex(t => t.id === currentTopic.id);
+  const prevTopic = currentTopicIndex > 0 ? courseData.topics[currentTopicIndex - 1] : null;
+  const nextTopic = currentTopicIndex < courseData.topics.length - 1 ? courseData.topics[currentTopicIndex + 1] : null;
 
   const handleSelectAnswer = (questionId: string, optionIndex: number) => {
     if (quizSubmitted) return;
@@ -610,6 +615,41 @@ export const IC3LearningView: React.FC<IC3LearningViewProps> = ({
               )}
             </div>
           )}
+          {/* Topic Navigation Footer Bar */}
+          <div className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 select-none">
+            <button
+              type="button"
+              disabled={!prevTopic}
+              onClick={() => prevTopic && handleSelectTopic(prevTopic.id)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Chủ đề trước:</span>
+              <span className="truncate max-w-[120px] sm:max-w-[180px]">
+                {prevTopic ? `Chủ đề ${prevTopic.order}` : 'Hết chủ đề'}
+              </span>
+            </button>
+
+            <span className="text-xs font-bold text-slate-400">
+              Chủ đề {currentTopic.order} / {courseData.topics.length}
+            </span>
+
+            <button
+              type="button"
+              disabled={!nextTopic}
+              onClick={() => nextTopic && handleSelectTopic(nextTopic.id)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer ${
+                !nextTopic
+                  ? 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800 text-slate-400'
+                  : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+              }`}
+            >
+              <span className="truncate max-w-[120px] sm:max-w-[180px]">
+                {nextTopic ? `Chủ đề ${nextTopic.order}: ${nextTopic.title}` : 'Đã hoàn thành'}
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </main>
       </div>
     </div>

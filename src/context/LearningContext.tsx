@@ -23,6 +23,7 @@ interface LearningContextType {
   submitQuizScore: (lessonId: string, score: number, totalQuestions: number) => void;
   resetLessonProgress: (lessonId: string) => void;
   unlockNextLesson: (currentLessonId: string) => void;
+  unlockSpecificLesson: (lessonId: string) => void;
   addXP: (amount: number) => void;
   calculateCourseProgress: (courseId: string) => { completed: number; total: number; percentage: number };
 }
@@ -207,6 +208,19 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }));
     }
   };
+  const unlockSpecificLesson = (lessonId: string) => {
+    updateCurrentUserProgress(user => ({
+      ...user,
+      progress: {
+        ...user.progress,
+        [lessonId]: {
+          ...(user.progress[lessonId] || { theoryCompleted: false, practiceCompleted: false, quizScore: 0, quizCompleted: false }),
+          isUnlocked: true
+        }
+      }
+    }));
+  };
+
 
   const resetLessonProgress = (lessonId: string) => {
     updateCurrentUserProgress(user => ({
@@ -358,6 +372,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         submitQuizScore,
         resetLessonProgress,
         unlockNextLesson,
+        unlockSpecificLesson,
         addXP,
         calculateCourseProgress
       }}

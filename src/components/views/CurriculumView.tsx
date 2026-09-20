@@ -14,6 +14,7 @@ import {
   Sparkles,
   Award
 } from 'lucide-react';
+import { UnlockLessonConfirmModal } from '../modals/UnlockLessonConfirmModal';
 
 interface CurriculumViewProps {
   onSelectLesson: (moduleId: ModuleType, lessonId: string) => void;
@@ -26,8 +27,9 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
   onOpenPractice,
   onBackToCourses
 }) => {
-  const { activeModuleId, setActiveModuleId, setActiveCourseId, userProgress } = useLearning();
   const { currentUser } = useAuth();
+  const { activeModuleId, setActiveModuleId, setActiveCourseId, userProgress, unlockSpecificLesson } = useLearning();
+  const [pendingLessonUnlock, setPendingLessonUnlock] = React.useState<{ id: string; title: string; order: number; prevTitle?: string } | null>(null);
   const isTeacher = currentUser?.role === 'teacher';
   const allowedCourses = isTeacher
     ? ['word', 'excel', 'powerpoint']
@@ -58,7 +60,8 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
   const ppProgress = calculateModuleProgress('powerpoint');
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+    <>
+      <div className="w-full max-w-5xl mx-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
       {/* Navigation Top Bar */}
       {onBackToCourses && (
         <div className="flex items-center justify-between">
@@ -407,10 +410,24 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   ) : (
-                    <div className="flex items-center gap-1 text-xs text-slate-400 font-medium px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800">
-                      <Lock className="w-3 h-3" />
-                      <span>Chưa mở khóa</span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const prevLessonIndex = currentModule.lessons.findIndex(l => l.id === lesson.id) - 1;
+                        const prevLesson = prevLessonIndex >= 0 ? currentModule.lessons[prevLessonIndex] : undefined;
+                        setPendingLessonUnlock({
+                          id: lesson.id,
+                          title: lesson.title,
+                          order: lesson.order,
+                          prevTitle: prevLesson ? `Bài ${prevLesson.order}: ${prevLesson.title}` : undefined
+                        });
+                      }}
+                      className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-bold px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors cursor-pointer"
+                      title="Bấm để mở khóa sớm bài học này"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Mở khóa bài</span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -419,5 +436,21 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({
         </div>
       </div>
     </div>
+      {/* Modal Confirm Unlock Lesson in CurriculumView */}
+      <UnlockLessonConfirmModal
+        isOpen={Boolean(pendingLessonUnlock)}
+        lessonTitle={pendingLessonUnlock?.title || ''}
+        lessonOrder={pendingLessonUnlock?.order || 0}
+        prevLessonTitle={pendingLessonUnlock?.prevTitle}
+        onConfirm={() => {
+          if (pendingLessonUnlock) {
+            unlockSpecificLesson(pendingLessonUnlock.id);
+            onSelectLesson(activeModuleId, pendingLessonUnlock.id);
+            setPendingLessonUnlock(null);
+          }
+        }}
+        onCancel={() => setPendingLessonUnlock(null)}
+      />
+    </>
   );
 };
