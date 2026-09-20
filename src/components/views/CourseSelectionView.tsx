@@ -5,6 +5,9 @@ import { COURSES_REGISTRY } from '../../data/coursesData';
 import type { CourseDefinition } from '../../types/course';
 import {
   Sparkles,
+  Trophy,
+  Flame,
+  Target,
   BookOpen,
   CheckCircle2,
   Lock,
@@ -105,9 +108,42 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
     });
   }, [searchQuery, activeFilter, allowedCourses]);
 
-  const myCoursesCount = useMemo(() => {
-    return COURSES_REGISTRY.filter(c => isCourseUnlocked(c.id)).length;
+  const myCourses = useMemo(() => {
+    return COURSES_REGISTRY.filter(c => isCourseUnlocked(c.id));
   }, [allowedCourses]);
+
+  const myCoursesCount = myCourses.length;
+
+  // Overall student progress computation
+  const overallStats = useMemo(() => {
+    let totalUnitsAcrossCourses = 0;
+    let completedUnitsAcrossCourses = 0;
+    let inProgressCount = 0;
+    let completedCoursesCount = 0;
+
+    myCourses.forEach(c => {
+      const p = calculateCourseProgress(c.id);
+      totalUnitsAcrossCourses += p.total;
+      completedUnitsAcrossCourses += p.completed;
+      if (p.percentage === 100) {
+        completedCoursesCount++;
+      } else if (p.completed > 0) {
+        inProgressCount++;
+      }
+    });
+
+    const overallPercent = totalUnitsAcrossCourses > 0
+      ? Math.min(100, Math.round((completedUnitsAcrossCourses / totalUnitsAcrossCourses) * 100))
+      : 0;
+
+    return {
+      totalUnits: totalUnitsAcrossCourses,
+      completedUnits: completedUnitsAcrossCourses,
+      inProgressCount,
+      completedCoursesCount,
+      overallPercent
+    };
+  }, [myCourses, calculateCourseProgress]);
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-8 space-y-8 animate-fadeIn">
@@ -157,6 +193,79 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-sky-500/20 via-indigo-500/10 to-transparent pointer-events-none" />
       </div>
 
+      {/* Student Progress & Achievement Dashboard Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Khóa Đã Đăng Ký */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
+            <BookOpen className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate">
+              Khóa Đã Được Cấp
+            </span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                {myCoursesCount}
+              </span>
+              <span className="text-xs text-slate-400">/{COURSES_REGISTRY.length}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Tiến Độ Tổng Thể */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+            <Target className="w-5 h-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate">
+                Tiến Độ Tổng
+              </span>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                {overallStats.overallPercent}%
+              </span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+                style={{ width: `${Math.max(4, overallStats.overallPercent)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Điểm Tích Lũy XP */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
+            <Trophy className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate">
+              Thành Tích Điểm XP
+            </span>
+            <span className="text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400">
+              {currentUser?.xpPoints ?? 0} <span className="text-xs font-bold text-slate-500">XP</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Chuỗi Chuyên Cần */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 flex items-center justify-center shrink-0">
+            <Flame className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate">
+              Chuỗi Học Tập
+            </span>
+            <span className="text-lg sm:text-xl font-black text-orange-600 dark:text-orange-400">
+              {currentUser?.streak ?? 1} <span className="text-xs font-bold text-slate-500">ngày</span>
+            </span>
+          </div>
+        </div>
+      </div>
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Category Tabs */}
@@ -349,13 +458,13 @@ export const CourseSelectionView: React.FC<CourseSelectionViewProps> = ({
                   ))}
                 </div>
 
-                {/* Progress Bar if unlocked */}
-                {isUnlocked && (course.kind === 'curriculum' || course.kind === 'programming') && (
+                {/* Progress Bar for ALL unlocked courses */}
+                {isUnlocked && (
                   <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-500 dark:text-slate-400 font-medium">Tiến độ khóa học:</span>
                       <span className="font-bold text-slate-800 dark:text-slate-200">
-                        {progress.completed}/{progress.total} bài ({progress.percentage}%)
+                        {progress.completed}/{progress.total} {course.kind === 'robotics' ? 'thử thách' : course.unitLabel} ({progress.percentage}%)
                       </span>
                     </div>
                     <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">

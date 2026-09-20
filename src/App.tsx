@@ -40,6 +40,7 @@ const AppContent: React.FC = () => {
       const saved = localStorage.getItem(sessionStateKey);
       if (saved) {
         const parsed = JSON.parse(saved);
+        // If user is student or has explicit preference, load saved view; default is always 'courses'
         if (parsed.viewMode) return parsed.viewMode;
       }
     } catch {
@@ -134,18 +135,24 @@ const AppContent: React.FC = () => {
       // ignore
     }
   }, [viewMode, activeCourseId, activeModuleId, activeLessonId, cpState, roboticsLessonId, sessionStateKey]);
-
   // Unauthenticated user: show LandingPage by default; show LoginPage when user clicks login or modal
   if (!currentUser && !isGuestExploring) {
     if (showLoginModal) {
-      return <LoginPage onBackToLanding={() => setShowLoginModal(false)} />;
+      return (
+        <LoginPage
+          onBackToLanding={() => setShowLoginModal(false)}
+        />
+      );
     }
     return (
       <LandingPageView
         onLoginClick={() => setShowLoginModal(true)}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(prev => !prev)}
-        onExploreCourses={() => setIsGuestExploring(true)}
+        onExploreCourses={() => {
+          setViewMode('courses');
+          setIsGuestExploring(true);
+        }}
       />
     );
   }

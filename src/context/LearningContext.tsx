@@ -294,6 +294,19 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     // For practice exams course
+    if (courseDef.kind === 'practice') {
+      try {
+        const storageKeyPractice = `mos_practice_${courseId}_done`;
+        const doneMap = JSON.parse(localStorage.getItem(storageKeyPractice) || '{}');
+        const completed = Object.values(doneMap).filter(Boolean).length;
+        const total = courseDef.totalUnits || 5;
+        const percentage = Math.min(100, Math.round((completed / total) * 100));
+        return { completed, total, percentage };
+      } catch {
+        return { completed: 0, total: courseDef.totalUnits || 5, percentage: 0 };
+      }
+    }
+
     const total = courseDef.totalUnits || 5;
     const completed = 0;
     return {
@@ -302,7 +315,6 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       percentage: 0
     };
   };
-
   const completedCount = Object.values(userProgress).filter(
     p => p.theoryCompleted && p.practiceCompleted && p.quizCompleted
   ).length;
